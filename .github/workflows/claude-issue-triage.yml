@@ -16,7 +16,7 @@ jobs:
       cancel-in-progress: true
     permissions:
       contents: read
-      issues: write
+      issues: write # también cubre crear labels
       id-token: write
     steps:
       - name: Checkout repository
@@ -34,8 +34,12 @@ jobs:
 
             Eres el encargado de triage de este repositorio (Tetris en JS vanilla; lee CLAUDE.md).
             1. Lee el issue con `gh issue view ${{ github.event.issue.number }}`.
-            2. Lista los labels disponibles con `gh label list`. Asigna SOLO labels existentes
-               con `gh issue edit ${{ github.event.issue.number }} --add-label "..."`.
+            2. Lista los labels disponibles con `gh label list`. Asigna AL MENOS DOS labels con
+               `gh issue edit ${{ github.event.issue.number }} --add-label "a,b"`: uno de tipo
+               (bug / enhancement / question) y uno de área (p. ej. accessibility, documentation).
+               Si no existe un label adecuado, créalo antes con `gh label create "<nombre>" --description "..."`.
+               Al final verifica con `gh issue view ${{ github.event.issue.number }} --json labels`
+               que quedaron >= 2 labels; si no, corrige.
             3. Revisa el código relevante (index.html, style.css, game.js) y escribe en español
                un diagnóstico con estas secciones:
                ## Diagnóstico
@@ -50,4 +54,4 @@ jobs:
                (así una edición del issue reemplaza el diagnóstico anterior en vez de duplicarlo).
             No modifiques código ni abras PRs.
           claude_args: |
-            --allowedTools "Read,Glob,Grep,Write,Bash(gh issue view:*),Bash(gh label list:*),Bash(gh issue edit:*),Bash(gh issue comment:*)"
+            --allowedTools "Read,Glob,Grep,Write,Bash(gh issue view:*),Bash(gh label list:*),Bash(gh label create:*),Bash(gh issue edit:*),Bash(gh issue comment:*)"
