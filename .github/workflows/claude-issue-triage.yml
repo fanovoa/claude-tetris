@@ -1,0 +1,53 @@
+name: Claude Issue Triage
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  triage:
+    # solo si es apertura o se cambió título/descripción (no en ediciones de bots)
+    if: |
+      github.event.sender.type != 'Bot' &&
+      (github.event.action == 'opened' || github.event.changes.body || github.event.changes.title)
+    runs-on: ubuntu-latest
+    concurrency:
+      group: triage-${{ github.event.issue.number }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Issue Triage
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            ISSUE: #${{ github.event.issue.number }}
+
+            Eres el encargado de triage de este repositorio (Tetris en JS vanilla; lee CLAUDE.md).
+            1. Lee el issue con `gh issue view ${{ github.event.issue.number }}`.
+            2. Lista los labels disponibles con `gh label list`. Asigna SOLO labels existentes
+               con `gh issue edit ${{ github.event.issue.number }} --add-label "..."`.
+            3. Revisa el código relevante (index.html, style.css, game.js) y escribe en español
+               un diagnóstico con estas secciones:
+               ## Diagnóstico
+               - **Tipo**: bug / mejora / pregunta
+               - **Resumen del problema**
+               - **Causa probable** (con referencias `archivo:línea`)
+               - **Archivos afectados**
+               - **Enfoque de solución sugerido** (pasos, sin implementar código)
+               - **Riesgos / preguntas abiertas**
+            4. Publica o actualiza el diagnóstico con
+               `gh issue comment ${{ github.event.issue.number }} --edit-last --create-if-none --body-file <archivo>`
+               (así una edición del issue reemplaza el diagnóstico anterior en vez de duplicarlo).
+            No modifiques código ni abras PRs.
+          claude_args: |
+            --allowedTools "Read,Glob,Grep,Write,Bash(gh issue view:*),Bash(gh label list:*),Bash(gh issue edit:*),Bash(gh issue comment:*)"
