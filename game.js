@@ -15,6 +15,9 @@ const COLORS = [
   '#ffb74d', // L - orange
   '#b0bec5', // N - tuerca (gris metálico)
   '#f06292', // + - cruz (rosa)
+  '#4db6ac', // U - teal
+  '#ffee58', // Y - amarillo limón
+  '#ffffff', // 1x1 - single (blanco)
 ];
 
 const PIECES = [
@@ -28,7 +31,11 @@ const PIECES = [
   [[0,0,7],[7,7,7],[0,0,0]],                  // L
   [[8,8,8],[8,0,8],[8,8,8]],                  // N - tuerca (hueco central)
   [[0,9,0],[9,9,9],[0,9,0]],                  // + - cruz
+  [[10,0,10],[10,10,10]],                     // U
+  [[11,0,11],[0,11,0],[0,11,0]],              // Y
+  [[12]],                                      // 1x1 - recompensa tras Tetris
 ];
+const SINGLE = 12; // fuera del sorteo aleatorio
 
 const LINE_SCORES = [0, 100, 300, 500, 800];
 
@@ -54,7 +61,10 @@ function createBoard() {
 }
 
 function randomPiece() {
-  const type = Math.floor(Math.random() * (PIECES.length - 1)) + 1;
+  return makePiece(Math.floor(Math.random() * (SINGLE - 1)) + 1);
+}
+
+function makePiece(type) {
   const shape = PIECES[type].map(row => [...row]);
   return { type, shape, x: Math.floor(COLS / 2) - Math.floor(shape[0].length / 2), y: 0 };
 }
@@ -117,6 +127,7 @@ function clearLines(mult = 1) {
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
     updateHUD();
   }
+  return cleared;
 }
 
 function ghostY() {
@@ -144,8 +155,9 @@ function softDrop() {
 
 function lockPiece() {
   merge();
-  clearLines(current.type === 8 ? 2 : 1); // tuerca: bonus ×2
+  const cleared = clearLines(current.type === 8 ? 2 : 1); // tuerca: bonus ×2
   spawn();
+  if (cleared === 4 && !gameOver) { next = makePiece(SINGLE); drawNext(); } // recompensa tras Tetris
 }
 
 function spawn() {
