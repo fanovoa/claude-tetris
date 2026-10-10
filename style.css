@@ -76,36 +76,28 @@ body {
   right: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: none;
-  border: none;
-  color: var(--muted);
+  gap: 6px;
+  background: var(--kbd-bg);
+  border: 2px solid var(--kbd-border);
+  border-radius: 3px;
+  box-shadow: 0 3px 0 var(--kbd-border);
+  color: var(--kbd-text);
+  padding: 4px 10px;
+  font-family: 'Courier New', Courier, monospace;
   font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
   cursor: pointer;
 }
 
-.theme-toggle .track {
-  position: relative;
-  width: 36px;
-  height: 20px;
-  border-radius: 10px;
-  background: var(--kbd-bg);
-  border: 1px solid var(--border);
+.theme-toggle:hover {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
-.theme-toggle .thumb {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--accent);
-  transition: transform 0.15s;
-}
-
-.theme-toggle[aria-checked="true"] .thumb {
-  transform: translateX(16px);
+.theme-toggle:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--kbd-border);
 }
 
 .theme-toggle:focus-visible {

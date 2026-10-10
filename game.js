@@ -256,7 +256,8 @@ function loop(ts) {
     }
   }
   draw();
-  animId = requestAnimationFrame(loop);
+  // endGame() cancela el frame, pero loop lo re-agendaba y el juego seguía bajo el overlay
+  if (!gameOver) animId = requestAnimationFrame(loop);
 }
 
 function init() {
@@ -307,7 +308,10 @@ restartBtn.addEventListener('click', init);
 function applyTheme(light) {
   if (light) document.documentElement.dataset.theme = 'light';
   else delete document.documentElement.dataset.theme;
-  themeToggle.setAttribute('aria-checked', String(light));
+  themeToggle.setAttribute('aria-pressed', String(light));
+  themeToggle.setAttribute('aria-label', light ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro');
+  themeToggle.querySelector('.theme-icon').textContent = light ? '☀' : '☁';
+  themeToggle.querySelector('.theme-label').textContent = light ? 'LIGHT' : 'DARK';
   gridColor = getComputedStyle(document.documentElement).getPropertyValue('--grid').trim();
   // con el loop detenido (pausa/game over) hay que redibujar a mano
   if (current && (paused || gameOver)) {
@@ -317,7 +321,7 @@ function applyTheme(light) {
 }
 
 themeToggle.addEventListener('click', () => {
-  applyTheme(themeToggle.getAttribute('aria-checked') !== 'true');
+  applyTheme(themeToggle.getAttribute('aria-pressed') !== 'true');
   themeToggle.blur(); // evita que Space (hard drop) reactive el botón
 });
 
