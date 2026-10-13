@@ -18,6 +18,11 @@ const COLORS = [
   '#4db6ac', // U - teal
   '#ffee58', // Y - amarillo limón
   '#ffffff', // 1x1 - single (blanco)
+  '#212121', // 13 bomba
+  '#fff176', // 14 rayo
+  '#ce93d8', // 15 tinte
+  '#a1887f', // 16 gravedad
+  '#80deea', // 17 congelar
 ];
 
 const PIECES = [
@@ -34,8 +39,13 @@ const PIECES = [
   [[10,0,10],[10,10,10]],                     // U
   [[11,0,11],[0,11,0],[0,11,0]],              // Y
   [[12]],                                      // 1x1 - recompensa tras Tetris
+  [[13]], [[14]], [[15]], [[16]], [[17]],      // power-ups: bomba, rayo, tinte, gravedad, congelar
 ];
 const SINGLE = 12; // fuera del sorteo aleatorio
+const POWER = 13;  // primer índice de power-up (13–17)
+const NAMES = { 13: '💣 Bomba', 14: '⚡ Rayo', 15: '🎨 Tinte', 16: '⬇ Gravedad', 17: '❄ Congelar' };
+const TINT_COLOR = '#7a7a3a'; // oliva turbio, "incómodo"
+const POWER_EVERY = 5;        // líneas entre power-ups
 
 const LINE_SCORES = [0, 100, 300, 500, 800];
 
@@ -54,7 +64,7 @@ const themeToggle = document.getElementById('theme-toggle');
 
 let gridColor = '#22222e';
 
-let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId, tintLeft, freezeLeft, flashText, flashLeft;
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -153,11 +163,42 @@ function softDrop() {
   }
 }
 
+function applyPower(p) {
+  const x = p.x, y = p.y;
+  if (p.type !== 15 && p.type !== 17) { flashText = NAMES[p.type]; flashLeft = 1500; } // tinte/congelar ya tienen cuenta atrás
+  switch (p.type) {
+    case 13: // bomba 3x3
+      for (let r = y - 1; r <= y + 1; r++)
+        for (let c = x - 1; c <= x + 1; c++)
+          if (r >= 0 && r < ROWS && c >= 0 && c < COLS) board[r][c] = 0;
+      break;
+    case 14: // rayo: limpia la fila
+      board.splice(y, 1);
+      board.unshift(new Array(COLS).fill(0));
+      break;
+    case 15: tintLeft = 10000; break;
+    case 16: // gravedad: compacta cada columna hacia abajo
+      for (let c = 0; c < COLS; c++) {
+        const col = [];
+        for (let r = ROWS - 1; r >= 0; r--) if (board[r][c]) col.push(board[r][c]);
+        for (let r = ROWS - 1, i = 0; r >= 0; r--, i++) board[r][c] = col[i] || 0;
+      }
+      break;
+    case 17: freezeLeft = 5000; break;
+  }
+}
+
 function lockPiece() {
-  merge();
+  const before = lines;
+  if (current.type >= POWER) applyPower(current); else merge();
   const cleared = clearLines(current.type === 8 ? 2 : 1); // tuerca: bonus ×2
   spawn();
-  if (cleared === 4 && !gameOver) { next = makePiece(SINGLE); drawNext(); } // recompensa tras Tetris
+  if (gameOver) return;
+  if (Math.floor(lines / POWER_EVERY) > Math.floor(before / POWER_EVERY))
+    next = makePiece(POWER + Math.floor(Math.random() * 5)); // power-up tiene prioridad
+  else if (cleared === 4) next = makePiece(SINGLE); // recompensa tras Tetris
+  else return;
+  drawNext();
 }
 
 function spawn() {
@@ -177,7 +218,7 @@ function updateHUD() {
 
 function drawBlock(context, x, y, colorIndex, size, alpha) {
   if (!colorIndex) return;
-  const color = COLORS[colorIndex];
+  const color = tintLeft > 0 && context === ctx ? TINT_COLOR : COLORS[colorIndex];
   context.globalAlpha = alpha ?? 1;
   context.fillStyle = color;
   context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
@@ -224,6 +265,24 @@ function draw() {
   for (let r = 0; r < current.shape.length; r++)
     for (let c = 0; c < current.shape[r].length; c++)
       drawBlock(ctx, current.x + c, current.y + r, current.shape[r][c], BLOCK);
+
+  // etiquetas de power-up apiladas arriba a la izquierda
+  const labels = [];
+  if (current.type >= POWER) labels.push(NAMES[current.type]);
+  if (flashLeft > 0) labels.push(flashText);
+  if (tintLeft > 0) labels.push(`🎨 ${Math.ceil(tintLeft / 1000)}s`);
+  if (freezeLeft > 0) labels.push(`❄ ${Math.ceil(freezeLeft / 1000)}s`);
+  ctx.font = 'bold 16px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.lineWidth = 3;
+  ctx.lineJoin = 'round';
+  labels.forEach((t, i) => {
+    ctx.strokeStyle = '#000000b0';
+    ctx.strokeText(t, 6, 6 + i * 20);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(t, 6, 6 + i * 20);
+  });
 }
 
 function drawNext() {
@@ -262,7 +321,10 @@ function togglePause() {
 function loop(ts) {
   const dt = ts - lastTime;
   lastTime = ts;
-  dropAccum += dt;
+  tintLeft = Math.max(0, tintLeft - dt);
+  flashLeft = Math.max(0, flashLeft - dt);
+  if (freezeLeft > 0) { freezeLeft = Math.max(0, freezeLeft - dt); dropAccum = 0; }
+  else dropAccum += dt;
   if (dropAccum >= dropInterval) {
     dropAccum = 0;
     if (!collide(current.shape, current.x, current.y + 1)) {
@@ -285,6 +347,9 @@ function init() {
   gameOver = false;
   dropInterval = 1000;
   dropAccum = 0;
+  tintLeft = 0;
+  freezeLeft = 0;
+  flashLeft = 0;
   lastTime = performance.now();
   next = randomPiece();
   spawn();
