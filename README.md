@@ -40,6 +40,7 @@ Es una versión jugable del Tetris clásico con todas las mecánicas que esperar
 - **Pieza fantasma** (_ghost piece_): muestra dónde aterrizará la pieza actual.
 - **Vista previa** de la siguiente pieza.
 - **Sistema de puntuación** clásico de Tetris (100 / 300 / 500 / 800 multiplicado por nivel).
+- **Combos y bonus**: limpiar líneas con piezas consecutivas multiplica el puntaje ×2, ×3… (tope ×10); T-spin (regla de 3 esquinas), Back-to-Back ×1.5 (Tetris/T-spin seguidos) y Perfect Clear (+3000 × nivel). Con texto flotante, destello, sacudida y sonido.
 - **Niveles** que aumentan cada 10 líneas y aceleran la caída.
 - **Pausa** y **Game Over** con opción de reinicio.
 - **Power-ups aleatorios**: cada 5 líneas limpiadas la siguiente pieza es un bloque 1x1 con icono, cuyo efecto se aplica al fijarse (y el bloque desaparece):

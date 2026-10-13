@@ -48,6 +48,11 @@ const TINT_COLOR = '#7a7a3a'; // oliva turbio, "incómodo"
 const POWER_EVERY = 5;        // líneas entre power-ups
 
 const LINE_SCORES = [0, 100, 300, 500, 800];
+const TSPIN_SCORES = [400, 800, 1200, 1600]; // 0–3 líneas
+const PERFECT_BONUS = 3000;
+const MAX_COMBO = 10;
+const POPUP_LIFE = 1200;
+const FLASH_LIFE = 250;
 
 const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
@@ -56,6 +61,7 @@ const nextCtx = nextCanvas.getContext('2d');
 const scoreEl = document.getElementById('score');
 const linesEl = document.getElementById('lines');
 const levelEl = document.getElementById('level');
+const comboEl = document.getElementById('combo');
 const overlay = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
@@ -65,6 +71,8 @@ const themeToggle = document.getElementById('theme-toggle');
 let gridColor = '#22222e';
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId, tintLeft, freezeLeft, flashText, flashLeft;
+let combo, b2b, lastRotate, popups, shakeLeft, shakeMag, flashRows, flashRowsLeft;
+let audioCtx;
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -108,6 +116,7 @@ function tryRotate() {
     if (!collide(rotated, current.x + kick, current.y)) {
       current.shape = rotated;
       current.x += kick;
+      lastRotate = true;
       return;
     }
   }
@@ -120,24 +129,56 @@ function merge() {
         board[current.y + r][current.x + c] = current.shape[r][c];
 }
 
-function clearLines(mult = 1) {
-  let cleared = 0;
-  for (let r = ROWS - 1; r >= 0; r--) {
-    if (board[r].every(v => v !== 0)) {
-      board.splice(r, 1);
-      board.unshift(new Array(COLS).fill(0));
-      cleared++;
-      r++;
-    }
+// Quita las filas llenas y devuelve sus índices originales (el puntaje lo calcula lockPiece).
+function clearLines() {
+  const full = [];
+  for (let r = 0; r < ROWS; r++) if (board[r].every(v => v !== 0)) full.push(r);
+  for (let i = full.length - 1; i >= 0; i--) {
+    board.splice(full[i], 1);
+    board.unshift(new Array(COLS).fill(0));
   }
-  if (cleared) {
-    lines += cleared;
-    score += (LINE_SCORES[cleared] || 0) * level * mult;
+  if (full.length) {
+    lines += full.length;
     level = Math.floor(lines / 10) + 1;
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
-    updateHUD();
   }
-  return cleared;
+  return full;
+}
+
+// T-spin: pieza T, último movimiento fue rotación y ≥3 esquinas del centro ocupadas.
+function isTSpin() {
+  if (current.type !== 3 || !lastRotate) return false;
+  const cx = current.x + 1, cy = current.y + 1;
+  let n = 0;
+  for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+    const x = cx + dx, y = cy + dy;
+    if (x < 0 || x >= COLS || y >= ROWS || (y >= 0 && board[y][x])) n++;
+  }
+  return n >= 3;
+}
+
+function popup(text) {
+  popups.push({ text, life: POPUP_LIFE });
+}
+
+function beep(freq, dur = 0.12, delay = 0) {
+  try {
+    audioCtx = audioCtx || new AudioContext();
+    const t = audioCtx.currentTime + delay;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'square';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.06, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + dur);
+  } catch (e) { /* sin Web Audio: se juega sin sonido */ }
+}
+
+function arpeggio(base) {
+  [1, 1.25, 1.5].forEach((m, i) => beep(base * m, 0.15, i * 0.08));
 }
 
 function ghostY() {
@@ -156,6 +197,7 @@ function hardDrop() {
 function softDrop() {
   if (!collide(current.shape, current.x, current.y + 1)) {
     current.y++;
+    lastRotate = false;
     score += 1;
     updateHUD();
   } else {
@@ -190,8 +232,43 @@ function applyPower(p) {
 
 function lockPiece() {
   const before = lines;
+  const tspin = current.type < POWER && isTSpin(); // antes de merge: las esquinas no incluyen la propia T
   if (current.type >= POWER) applyPower(current); else merge();
-  const cleared = clearLines(current.type === 8 ? 2 : 1); // tuerca: bonus ×2
+  const nut = current.type === 8 ? 2 : 1; // tuerca: bonus ×2
+  const rows = clearLines();
+  const cleared = rows.length;
+  if (cleared) {
+    combo = Math.min(combo + 1, MAX_COMBO);
+    const hard = cleared === 4 || tspin;
+    let pts = (tspin ? TSPIN_SCORES[Math.min(cleared, 3)] : LINE_SCORES[cleared]) * level * nut * combo;
+    if (hard && b2b) pts *= 1.5;
+    const perfect = board.every(r => r.every(v => !v));
+    if (perfect) pts += PERFECT_BONUS * level;
+    score += Math.floor(pts);
+
+    if (tspin) popup(`T-SPIN ${['', 'SINGLE', 'DOUBLE', 'TRIPLE'][Math.min(cleared, 3)]}`);
+    else if (cleared === 4) popup('TETRIS');
+    if (hard && b2b) popup('BACK-TO-BACK ×1.5');
+    if (combo > 1) popup(`COMBO ×${combo}`);
+    if (perfect) popup('PERFECT CLEAR');
+    b2b = hard;
+
+    flashRows = rows;
+    flashRowsLeft = FLASH_LIFE;
+    const big = hard || perfect;
+    shakeMag = big ? 6 : Math.min(combo, 6);
+    shakeLeft = big ? 400 : 150 + combo * 30;
+    if (big) arpeggio(440 * 2 ** ((combo - 1) / 12));
+    else beep(440 * 2 ** ((combo - 1) / 12));
+  } else {
+    combo = 0; // el B2B solo se rompe con una limpieza no difícil
+    if (tspin) {
+      score += TSPIN_SCORES[0] * level;
+      popup('T-SPIN');
+      beep(660);
+    }
+  }
+  updateHUD();
   spawn();
   if (gameOver) return;
   if (Math.floor(lines / POWER_EVERY) > Math.floor(before / POWER_EVERY))
@@ -203,6 +280,7 @@ function lockPiece() {
 
 function spawn() {
   current = next;
+  lastRotate = false;
   next = randomPiece();
   if (collide(current.shape, current.x, current.y)) {
     endGame();
@@ -214,6 +292,7 @@ function updateHUD() {
   scoreEl.textContent = score.toLocaleString();
   linesEl.textContent = lines;
   levelEl.textContent = level;
+  comboEl.textContent = combo > 1 ? `×${combo}` : '—';
 }
 
 function drawBlock(context, x, y, colorIndex, size, alpha) {
@@ -247,6 +326,8 @@ function drawGrid() {
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  if (shakeLeft > 0) ctx.translate((Math.random() - 0.5) * 2 * shakeMag, (Math.random() - 0.5) * 2 * shakeMag);
   drawGrid();
 
   // board
@@ -283,6 +364,28 @@ function draw() {
     ctx.fillStyle = '#ffffff';
     ctx.fillText(t, 6, 6 + i * 20);
   });
+
+  // destello de las filas recién limpiadas
+  if (flashRowsLeft > 0) {
+    ctx.fillStyle = `rgba(255,255,255,${0.8 * flashRowsLeft / FLASH_LIFE})`;
+    flashRows.forEach(r => ctx.fillRect(0, r * BLOCK, COLS * BLOCK, BLOCK));
+  }
+  ctx.restore();
+
+  // popups flotantes (fuera de la sacudida para que el texto sea legible)
+  ctx.font = 'bold 26px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  popups.forEach((p, i) => {
+    const k = p.life / POPUP_LIFE;
+    const y = canvas.height / 2 + i * 34 - (1 - k) * 40;
+    ctx.globalAlpha = Math.min(1, k * 2);
+    ctx.strokeStyle = '#000000c0';
+    ctx.strokeText(p.text, canvas.width / 2, y);
+    ctx.fillStyle = '#ffeb3b';
+    ctx.fillText(p.text, canvas.width / 2, y);
+  });
+  ctx.globalAlpha = 1;
 }
 
 function drawNext() {
@@ -323,12 +426,17 @@ function loop(ts) {
   lastTime = ts;
   tintLeft = Math.max(0, tintLeft - dt);
   flashLeft = Math.max(0, flashLeft - dt);
+  shakeLeft = Math.max(0, shakeLeft - dt);
+  flashRowsLeft = Math.max(0, flashRowsLeft - dt);
+  popups.forEach(p => { p.life -= dt; });
+  popups = popups.filter(p => p.life > 0);
   if (freezeLeft > 0) { freezeLeft = Math.max(0, freezeLeft - dt); dropAccum = 0; }
   else dropAccum += dt;
   if (dropAccum >= dropInterval) {
     dropAccum = 0;
     if (!collide(current.shape, current.x, current.y + 1)) {
       current.y++;
+      lastRotate = false;
     } else {
       lockPiece();
     }
@@ -350,6 +458,14 @@ function init() {
   tintLeft = 0;
   freezeLeft = 0;
   flashLeft = 0;
+  combo = 0;
+  b2b = false;
+  lastRotate = false;
+  popups = [];
+  shakeLeft = 0;
+  shakeMag = 0;
+  flashRows = [];
+  flashRowsLeft = 0;
   lastTime = performance.now();
   next = randomPiece();
   spawn();
@@ -364,10 +480,10 @@ document.addEventListener('keydown', e => {
   if (paused || gameOver) return;
   switch (e.code) {
     case 'ArrowLeft':
-      if (!collide(current.shape, current.x - 1, current.y)) current.x--;
+      if (!collide(current.shape, current.x - 1, current.y)) { current.x--; lastRotate = false; }
       break;
     case 'ArrowRight':
-      if (!collide(current.shape, current.x + 1, current.y)) current.x++;
+      if (!collide(current.shape, current.x + 1, current.y)) { current.x++; lastRotate = false; }
       break;
     case 'ArrowDown':
       softDrop();
