@@ -35,6 +35,11 @@
         </div>
 
         <div class="panel-section">
+          <span class="label">OBJETIVO</span>
+          <span class="value" id="goal">—</span>
+        </div>
+
+        <div class="panel-section">
           <span class="label">NEXT</span>
           <canvas id="next-canvas" width="120" height="120"></canvas>
         </div>
@@ -52,11 +57,15 @@
       </aside>
     </div>
 
-    <div id="overlay" class="overlay hidden">
+    <div id="overlay" class="overlay">
       <div class="overlay-box">
-        <p id="overlay-title">GAME OVER</p>
+        <p id="overlay-title">TETRIS</p>
         <p id="overlay-score"></p>
-        <button id="restart-btn">Reiniciar</button>
+        <button id="restart-btn" hidden>Reiniciar</button>
+        <button class="mode-btn" data-mode="0">Normal</button>
+        <button class="mode-btn" data-mode="1">Desafío 1: 40 líneas en 2:00</button>
+        <button class="mode-btn" data-mode="2">Desafío 2: sobrevive 2:00</button>
+        <button class="mode-btn" data-mode="3">Desafío 3: limpia los fijos</button>
       </div>
     </div>
   </div>

@@ -23,6 +23,7 @@ const COLORS = [
   '#ce93d8', // 15 tinte
   '#a1887f', // 16 gravedad
   '#80deea', // 17 congelar
+  '#78909c', // 18 bloque fijo / basura (desafíos)
 ];
 
 const PIECES = [
@@ -47,6 +48,12 @@ const NAMES = { 13: '💣 Bomba', 14: '⚡ Rayo', 15: '🎨 Tinte', 16: '⬇ Gra
 const TINT_COLOR = '#7a7a3a'; // oliva turbio, "incómodo"
 const POWER_EVERY = 5;        // líneas entre power-ups
 
+const FIXED = 18;              // bloque fijo/basura: fuera de PIECES y del sorteo
+const CHALLENGE_TIME = 120000; // desafíos 1 y 2
+const GARBAGE_EVERY = 10000;   // desafío 2
+const GOAL_LINES = 40;         // desafío 1
+const FADE_LIFE = 1500;        // desafío 3: tiempo que se ve la pieza recién bloqueada
+
 const LINE_SCORES = [0, 100, 300, 500, 800];
 const TSPIN_SCORES = [400, 800, 1200, 1600]; // 0–3 líneas
 const PERFECT_BONUS = 3000;
@@ -67,11 +74,13 @@ const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
 const themeToggle = document.getElementById('theme-toggle');
+const goalEl = document.getElementById('goal');
 
 let gridColor = '#22222e';
 
-let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId, tintLeft, freezeLeft, flashText, flashLeft;
+let board, current, next, score, lines, level, paused, gameOver = true, lastTime, dropAccum, dropInterval, animId, tintLeft, freezeLeft, flashText, flashLeft;
 let combo, b2b, lastRotate, popups, shakeLeft, shakeMag, flashRows, flashRowsLeft;
+let mode = 0, timeLeft, garbageAccum, fades; // mode: 0 normal, 1–3 desafíos
 let audioCtx;
 
 function createBoard() {
@@ -110,7 +119,8 @@ function rotateCW(shape) {
 }
 
 function tryRotate() {
-  const rotated = rotateCW(current.shape);
+  let rotated = rotateCW(current.shape);
+  if (mode === 3 && level >= 3) rotated = rotateCW(rotateCW(rotated)); // ponytail: 3×CW en vez de una rotateCCW aparte
   const kicks = [0, -1, 1, -2, 2];
   for (const kick of kicks) {
     if (!collide(rotated, current.x + kick, current.y)) {
@@ -139,7 +149,7 @@ function clearLines() {
   }
   if (full.length) {
     lines += full.length;
-    level = Math.floor(lines / 10) + 1;
+    level = Math.floor(lines / (mode === 3 ? 5 : 10)) + 1; // D3: sube más rápido para llegar a la rotación inversa
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
   }
   return full;
@@ -231,12 +241,25 @@ function applyPower(p) {
 }
 
 function lockPiece() {
+  // lock out: la basura (D2) puede dejar la pieza por encima del tablero
+  if (current.shape.some((row, r) => current.y + r < 0 && row.some(v => v))) { endGame(); return; }
   const before = lines;
   const tspin = current.type < POWER && isTSpin(); // antes de merge: las esquinas no incluyen la propia T
   if (current.type >= POWER) applyPower(current); else merge();
   const nut = current.type === 8 ? 2 : 1; // tuerca: bonus ×2
   const rows = clearLines();
   const cleared = rows.length;
+  if (mode === 3) {
+    if (current.type < POWER) {
+      const cells = [];
+      current.shape.forEach((row, r) => row.forEach((v, c) => { if (v) cells.push([current.x + c, current.y + r, v]); }));
+      fades.push({ cells, life: FADE_LIFE });
+    }
+    // misma reubicación que clearLines: las celdas de filas limpiadas se van, las demás bajan
+    fades.forEach(f => {
+      f.cells = f.cells.filter(([, y]) => !rows.includes(y)).map(([x, y, v]) => [x, y + rows.filter(r => r > y).length, v]);
+    });
+  }
   if (cleared) {
     combo = Math.min(combo + 1, MAX_COMBO);
     const hard = cleared === 4 || tspin;
@@ -269,6 +292,7 @@ function lockPiece() {
     }
   }
   updateHUD();
+  if (checkGoal()) return;
   spawn();
   if (gameOver) return;
   if (Math.floor(lines / POWER_EVERY) > Math.floor(before / POWER_EVERY))
@@ -276,6 +300,43 @@ function lockPiece() {
   else if (cleared === 4) next = makePiece(SINGLE); // recompensa tras Tetris
   else return;
   drawNext();
+}
+
+function placeFixed() {
+  for (let r = ROWS - 8; r < ROWS; r++) {
+    const hole = Math.floor(Math.random() * COLS);
+    for (let c = 0; c < COLS; c++) if (c !== hole && Math.random() < 0.5) board[r][c] = FIXED;
+  }
+}
+
+function addGarbage() {
+  if (board[0].some(v => v)) { endGame(); return; }
+  const row = new Array(COLS).fill(FIXED);
+  row[Math.floor(Math.random() * COLS)] = 0;
+  board.shift();
+  board.push(row);
+  while (collide(current.shape, current.x, current.y)) current.y--; // la pieza activa sube con el tablero
+}
+
+// Devuelve true si el desafío terminó (victoria o derrota).
+function checkGoal() {
+  if (mode === 1 && lines >= GOAL_LINES) endGame('¡DESAFÍO SUPERADO!');
+  else if (mode === 1 && timeLeft <= 0) endGame('TIEMPO AGOTADO');
+  else if (mode === 2 && timeLeft <= 0) endGame('¡DESAFÍO SUPERADO!');
+  else if (mode === 3 && !board.some(r => r.includes(FIXED))) endGame('¡DESAFÍO SUPERADO!');
+  return gameOver;
+}
+
+function updateGoal() {
+  const t = Math.ceil(Math.max(0, timeLeft) / 1000);
+  const clock = `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
+  const text = [
+    '—',
+    `${lines}/${GOAL_LINES} · ${clock}`,
+    clock,
+    `${board.reduce((n, r) => n + r.filter(v => v === FIXED).length, 0)} fijos`,
+  ][mode];
+  if (goalEl.textContent !== text) goalEl.textContent = text;
 }
 
 function spawn() {
@@ -293,6 +354,7 @@ function updateHUD() {
   linesEl.textContent = lines;
   levelEl.textContent = level;
   comboEl.textContent = combo > 1 ? `×${combo}` : '—';
+  updateGoal();
 }
 
 function drawBlock(context, x, y, colorIndex, size, alpha) {
@@ -333,7 +395,12 @@ function draw() {
   // board
   for (let r = 0; r < ROWS; r++)
     for (let c = 0; c < COLS; c++)
-      drawBlock(ctx, c, r, board[r][c], BLOCK);
+      if (mode !== 3 || board[r][c] === FIXED) drawBlock(ctx, c, r, board[r][c], BLOCK); // D3: piezas bloqueadas invisibles
+
+  // D3: piezas recién bloqueadas, desvaneciéndose (ponytail: la gravedad puede mover celdas mientras se desvanecen, ≤1,5 s)
+  fades.forEach(f => f.cells.forEach(([x, y, v]) => {
+    if (board[y]?.[x]) drawBlock(ctx, x, y, v, BLOCK, f.life / FADE_LIFE);
+  }));
 
   // ghost
   const gy = ghostY();
@@ -399,10 +466,10 @@ function drawNext() {
       drawBlock(nextCtx, offX + c, offY + r, shape[r][c], NB);
 }
 
-function endGame() {
+function endGame(title = 'GAME OVER') {
   gameOver = true;
   cancelAnimationFrame(animId);
-  overlayTitle.textContent = 'GAME OVER';
+  overlayTitle.textContent = title;
   overlayScore.textContent = `Puntuación: ${score.toLocaleString()}`;
   overlay.classList.remove('hidden');
 }
@@ -430,6 +497,15 @@ function loop(ts) {
   flashRowsLeft = Math.max(0, flashRowsLeft - dt);
   popups.forEach(p => { p.life -= dt; });
   popups = popups.filter(p => p.life > 0);
+  fades.forEach(f => { f.life -= dt; });
+  fades = fades.filter(f => f.life > 0);
+  if (mode === 1 || mode === 2) {
+    timeLeft -= dt;
+    if (mode === 2 && (garbageAccum += dt) >= GARBAGE_EVERY) { garbageAccum = 0; addGarbage(); }
+    updateGoal();
+    if (!gameOver) checkGoal();
+    if (gameOver) { draw(); return; }
+  }
   if (freezeLeft > 0) { freezeLeft = Math.max(0, freezeLeft - dt); dropAccum = 0; }
   else dropAccum += dt;
   if (dropAccum >= dropInterval) {
@@ -446,8 +522,13 @@ function loop(ts) {
   if (!gameOver) animId = requestAnimationFrame(loop);
 }
 
-function init() {
+function init(m) {
+  if (m !== undefined) mode = m;
   board = createBoard();
+  if (mode === 3) placeFixed();
+  timeLeft = CHALLENGE_TIME;
+  garbageAccum = 0;
+  restartBtn.hidden = false;
   score = 0;
   lines = 0;
   level = 1;
@@ -462,6 +543,7 @@ function init() {
   b2b = false;
   lastRotate = false;
   popups = [];
+  fades = [];
   shakeLeft = 0;
   shakeMag = 0;
   flashRows = [];
@@ -500,7 +582,11 @@ document.addEventListener('keydown', e => {
   updateHUD();
 });
 
-restartBtn.addEventListener('click', init);
+restartBtn.addEventListener('click', () => init());
+document.querySelectorAll('.mode-btn').forEach(b => b.addEventListener('click', () => {
+  init(+b.dataset.mode);
+  b.blur(); // evita que Space (hard drop) reactive el botón
+}));
 
 function applyTheme(light) {
   if (light) document.documentElement.dataset.theme = 'light';
@@ -523,5 +609,3 @@ themeToggle.addEventListener('click', () => {
 });
 
 applyTheme(false);
-
-init();

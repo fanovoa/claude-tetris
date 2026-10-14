@@ -17,6 +17,10 @@ Tres archivos: `index.html` (DOM + dos canvas), `style.css` y `game.js` (toda la
 - El game loop usa `requestAnimationFrame` (`loop`) con un acumulador `dropAccum` contra `dropInterval`. Pausa y game over usan `cancelAnimationFrame(animId)`, así que cualquier código nuevo que detenga o reanude el loop debe mantener `animId` consistente.
 - Soft/hard drop, limpieza de líneas y subida de nivel actualizan puntaje y `dropInterval` en línea; hay que llamar a `updateHUD()` para reflejar los cambios en el DOM.
 
+## Modos
+
+`mode` (0 normal, 1–3 desafíos) se elige con los `.mode-btn` del overlay; `init(m)` lo fija y el reinicio lo conserva. `checkGoal()` resuelve victoria/derrota, `addGarbage()` (D2) y `placeFixed()` (D3) usan el índice `FIXED` (18). En D3 `draw()` solo pinta celdas `FIXED` y `tryRotate()` invierte desde nivel 3.
+
 ## Cuidado
 
 - El tamaño de los canvas está fijo en `index.html` (`board` 300×600, `next-canvas` 120×120). Si cambias `COLS`, `ROWS` o `BLOCK` en `game.js`, actualiza `width`/`height` allí a `COLS×BLOCK` / `ROWS×BLOCK`.

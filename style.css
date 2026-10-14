@@ -224,7 +224,7 @@ kbd {
   color: var(--accent);
 }
 
-#restart-btn {
+#restart-btn, .mode-btn {
   margin-top: 8px;
   background: var(--accent);
   color: var(--on-accent);
@@ -238,6 +238,6 @@ kbd {
   transition: background 0.15s;
 }
 
-#restart-btn:hover {
+#restart-btn:hover, .mode-btn:hover {
   background: var(--accent-hover);
 }
