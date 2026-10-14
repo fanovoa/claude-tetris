@@ -73,6 +73,17 @@
         <button class="mode-btn" data-mode="1">Desafío 1: 40 líneas en 2:00</button>
         <button class="mode-btn" data-mode="2">Desafío 2: sobrevive 2:00</button>
         <button class="mode-btn" data-mode="3">Desafío 3: limpia los fijos</button>
+        <div id="records">
+          <form id="name-form" hidden>
+            <label for="player-name">¡Nuevo record! Tu nombre:</label>
+            <input id="player-name" maxlength="12" autocomplete="off" />
+            <button type="submit">Guardar</button>
+          </form>
+          <p class="records-title">TOP 5</p>
+          <ol id="records-list"></ol>
+          <p id="records-extra"></p>
+          <button id="reset-records" type="button">Borrar records</button>
+        </div>
       </div>
     </div>
   </div>

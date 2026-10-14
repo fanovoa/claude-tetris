@@ -94,6 +94,7 @@ let combo, b2b, lastRotate, popups, shakeLeft, shakeMag, flashRows, flashRowsLef
 let mode = 0, timeLeft, garbageAccum, fades; // mode: 0 normal, 1–3 desafíos
 let energy, menu, swapSel, upcoming, previewLeft, slowLeft, holdReady, hold, undoSnap; // menu: null | 'abilities' | 'swap'
 let audioCtx;
+let maxCombo, recordPending; // records: mejor combo de la partida / ¿aún se puede guardar el nombre?
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -280,6 +281,7 @@ function lockPiece() {
   }
   if (cleared) {
     combo = Math.min(combo + 1, MAX_COMBO);
+    maxCombo = Math.max(maxCombo, combo);
     const hard = cleared === 4 || tspin;
     let pts = (tspin ? TSPIN_SCORES[Math.min(cleared, 3)] : LINE_SCORES[cleared]) * level * nut * combo;
     if (hard && b2b) pts *= 1.5;
@@ -619,11 +621,13 @@ function useHold() {
 }
 
 function endGame(title = 'GAME OVER') {
+  if (gameOver) return; // ponytail: evita doble registro si lock + checkGoal terminan en el mismo tick
   gameOver = true;
   cancelAnimationFrame(animId);
   overlayTitle.textContent = title;
   overlayScore.textContent = `Puntuación: ${score.toLocaleString()}`;
   overlay.classList.remove('hidden');
+  finishRecords();
 }
 
 function togglePause() {
@@ -693,6 +697,9 @@ function init(m) {
   freezeLeft = 0;
   flashLeft = 0;
   combo = 0;
+  maxCombo = 0;
+  recordPending = false;
+  nameForm.hidden = true;
   b2b = false;
   lastRotate = false;
   popups = [];
@@ -719,6 +726,7 @@ function init(m) {
 }
 
 document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return; // escribiendo el nombre: el juego no reacciona
   if (menu) { handleMenuKey(e); return; }
   if (e.code === 'KeyP') { togglePause(); return; }
   if (paused || gameOver) return;
@@ -778,4 +786,72 @@ themeToggle.addEventListener('click', () => {
   themeToggle.blur(); // evita que Space (hard drop) reactive el botón
 });
 
+// ---- Records (localStorage) ----
+const RECORDS_KEY = 'tetris-records';
+const nameForm = document.getElementById('name-form');
+const nameInput = document.getElementById('player-name');
+const recordsList = document.getElementById('records-list');
+let newRecordIdx = -1;
+
+function loadRecords() {
+  try {
+    const r = JSON.parse(localStorage.getItem(RECORDS_KEY));
+    return { top: (Array.isArray(r.top) ? r.top : []).filter(t => t && Number.isFinite(t.score)).map(t => ({ name: String(t.name ?? ''), score: t.score })), bestCombo: +r.bestCombo || 0, maxLines: +r.maxLines || 0 };
+  } catch (e) { return { top: [], bestCombo: 0, maxLines: 0 }; }
+}
+
+function saveRecords(r) {
+  try { localStorage.setItem(RECORDS_KEY, JSON.stringify(r)); } catch (e) { /* sin storage: se juega sin records */ }
+}
+
+function renderRecords() {
+  const r = loadRecords();
+  recordsList.textContent = '';
+  r.top.forEach((t, i) => {
+    const li = document.createElement('li');
+    li.textContent = `${t.name} — ${(+t.score || 0).toLocaleString()}`;
+    if (i === newRecordIdx) li.className = 'new';
+    recordsList.appendChild(li);
+  });
+  document.getElementById('records-extra').textContent = `Mejor combo ×${r.bestCombo} · Líneas máx ${r.maxLines}`;
+}
+
+function finishRecords() {
+  const r = loadRecords();
+  r.bestCombo = Math.max(r.bestCombo, maxCombo);
+  r.maxLines = Math.max(r.maxLines, lines);
+  saveRecords(r);
+  newRecordIdx = -1;
+  recordPending = score > 0 && (r.top.length < 5 || score > r.top[r.top.length - 1].score);
+  nameForm.hidden = !recordPending;
+  renderRecords();
+  if (recordPending) { nameInput.value = ''; nameInput.focus(); }
+}
+
+nameForm.addEventListener('submit', e => {
+  e.preventDefault();
+  if (!recordPending) return;
+  recordPending = false;
+  const r = loadRecords();
+  const entry = { name: nameInput.value.trim() || 'Anónimo', score };
+  r.top.push(entry);
+  r.top.sort((a, b) => b.score - a.score); // estable: a igualdad queda tras los existentes
+  newRecordIdx = r.top.indexOf(entry);
+  r.top = r.top.slice(0, 5);
+  saveRecords(r);
+  nameForm.hidden = true;
+  renderRecords();
+  nameInput.blur();
+});
+
+document.getElementById('reset-records').addEventListener('click', e => {
+  if (confirm('¿Borrar todos los records?')) {
+    try { localStorage.removeItem(RECORDS_KEY); } catch (err) { /* ignorar */ }
+    newRecordIdx = -1;
+    renderRecords();
+  }
+  e.currentTarget.blur();
+});
+
+renderRecords();
 applyTheme(false);

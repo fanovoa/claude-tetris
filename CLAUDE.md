@@ -29,3 +29,7 @@ Tres archivos: `index.html` (DOM + dos canvas), `style.css` y `game.js` (toda la
 
 - El tamaño de los canvas está fijo en `index.html` (`board` 300×600, `next-canvas` 120×120). Si cambias `COLS`, `ROWS` o `BLOCK` en `game.js`, actualiza `width`/`height` allí a `COLS×BLOCK` / `ROWS×BLOCK`.
 - Las vistas previas usan `drawPreview` con cuadrícula 4×4 y bloque fijo: `next-canvas` y `hold-canvas` 80×80 (20px), `queue-canvas` 80×192 (12px). Si cambias el tamaño de un canvas, ajusta el bloque en `drawNext`.
+
+## Records
+
+`localStorage['tetris-records']` = `{ top: [{name, score}], bestCombo, maxLines }` (top 5), siempre con try/catch (`loadRecords`/`saveRecords`). `endGame()` llama a `finishRecords()`: actualiza bestCombo (`maxCombo`, de `lockPiece()`) y maxLines, y si el score entra al top muestra `#name-form`; el submit inserta, marca la fila `.new` y hace blur. El keydown global ignora teclas cuando `e.target` es un INPUT. Bloque `#records` dentro de `.overlay-box`; también aparece en la pausa.
