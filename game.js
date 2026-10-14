@@ -796,7 +796,7 @@ function pastelize(hex) {
 }
 
 function paletteFor(s) {
-  return s === 'pastel' ? COLORS.map((c, i) => c && i !== 13 && i !== 18 ? pastelize(c) : c) // bomba y bloque fijo conservan su identidad : COLORS;
+  return s === 'pastel' ? COLORS.map((c, i) => c && i !== 13 && i !== 18 ? pastelize(c) : c) : COLORS; // bomba y bloque fijo conservan su identidad
 }
 
 // Pinta el cuerpo de un bloque (px, py = esquina; s = lado) según la skin activa
