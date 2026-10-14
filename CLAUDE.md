@@ -37,3 +37,8 @@ Tres archivos: `index.html` (DOM + dos canvas), `style.css` y `game.js` (toda la
 ## Skins
 
 `skin` (`retro`/`neon`/`pastel`/`pixel`, en `localStorage['tetris-skin']`) se elige con `#skin-select`; `applySkin()` fija `colors` (paleta activa; `COLORS` es la retro, pastel se deriva con `pastelize`), `data-skin` en `<html>` (fondo negro en neon) y `gridColor`. `drawBlock` sigue siendo el único punto que pinta bloques; las skins no-retro delegan en `drawBlockSkin`. Todo el código de skins está en el bloque `// ---- Skins ----` al final de `game.js`.
+
+## Menú de pausa
+
+P o Escape (si no hay `menu` de habilidades ni game over) alternan `togglePause()`, que muestra `#pause-menu` (hermano de `#overlay`, no lo reutiliza): Reanudar, Reiniciar (`init()` conserva `mode`), Ver controles y `#start-level`. Con `paused` solo P/Esc actúan en el keydown.
+`startLevel` (1–10) lo usan `init()` (nivel y `dropInterval` iniciales) y `baseLevel` (copia por partida) en `clearLines()`; aplica a la siguiente partida. Al reanudar se hace `blur()` y se reinician `lastTime`/`dropAccum`.

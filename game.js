@@ -99,6 +99,8 @@ let mode = 0, timeLeft, garbageAccum, fades; // mode: 0 normal, 1–3 desafíos
 let energy, menu, swapSel, upcoming, previewLeft, slowLeft, holdReady, hold, undoSnap; // menu: null | 'abilities' | 'swap'
 let audioCtx;
 let maxCombo, recordPending; // records: mejor combo de la partida / ¿aún se puede guardar el nombre?
+let baseLevel = 1; // nivel inicial de la partida en curso (fijado en init)
+let startLevel = 1; // nivel inicial de la próxima partida (menú de pausa)
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -167,7 +169,7 @@ function clearLines() {
   if (full.length) {
     lines += full.length;
     energy = Math.min(ENERGY_MAX, energy + full.length);
-    level = Math.floor(lines / (mode === 3 ? 5 : 10)) + 1; // D3: sube más rápido para llegar a la rotación inversa
+    level = Math.floor(lines / (mode === 3 ? 5 : 10)) + baseLevel; // D3: sube más rápido para llegar a la rotación inversa
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
   }
   return full;
@@ -638,19 +640,35 @@ function endGame(title = 'GAME OVER') {
   finishRecords();
 }
 
+// ---- Menú de pausa ----
+const pauseMenu = document.getElementById('pause-menu');
+const pauseControls = document.getElementById('pause-controls');
+const startLevelSel = document.getElementById('start-level');
+
 function togglePause() {
   if (gameOver) return;
   paused = !paused;
-  if (!paused) {
-    lastTime = performance.now();
-    loop(lastTime);
-  } else {
+  pauseMenu.classList.toggle('hidden', !paused);
+  if (paused) {
     cancelAnimationFrame(animId);
-    overlayTitle.textContent = 'PAUSA';
-    overlayScore.textContent = '';
-    overlay.classList.remove('hidden');
+    pauseControls.hidden = true;
+    startLevelSel.value = startLevel;
+  } else {
+    document.activeElement?.blur(); // evita que Space (hard drop) active un botón del menú
+    lastTime = performance.now(); // sin caída instantánea al reanudar
+    dropAccum = 0;
+    cancelAnimationFrame(animId);
+    animId = requestAnimationFrame(loop);
   }
 }
+
+document.getElementById('pause-resume').addEventListener('click', togglePause);
+document.getElementById('pause-restart').addEventListener('click', e => { init(); e.currentTarget.blur(); });
+document.getElementById('pause-controls-btn').addEventListener('click', e => {
+  pauseControls.hidden = !pauseControls.hidden;
+  e.currentTarget.blur();
+});
+startLevelSel.addEventListener('change', () => { startLevel = +startLevelSel.value; });
 
 function loop(ts) {
   const dt = ts - lastTime;
@@ -696,10 +714,11 @@ function init(m) {
   restartBtn.hidden = false;
   score = 0;
   lines = 0;
-  level = 1;
+  baseLevel = startLevel;
+  level = baseLevel;
   paused = false;
   gameOver = false;
-  dropInterval = 1000;
+  dropInterval = Math.max(100, 1000 - (level - 1) * 90);
   dropAccum = 0;
   tintLeft = 0;
   freezeLeft = 0;
@@ -729,6 +748,7 @@ function init(m) {
   spawn();
   updateHUD();
   overlay.classList.add('hidden');
+  pauseMenu.classList.add('hidden');
   cancelAnimationFrame(animId);
   animId = requestAnimationFrame(loop);
 }
@@ -737,8 +757,8 @@ document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return; // escribiendo el nombre: el juego no reacciona
   if (e.target === skinSelect) return; // el select maneja sus propias teclas
   if (menu) { handleMenuKey(e); return; }
-  if (e.code === 'KeyP') { togglePause(); return; }
-  if (paused || gameOver) return;
+  if (e.code === 'KeyP' || e.code === 'Escape') { if (!e.repeat) togglePause(); return; }
+  if (paused || gameOver) return; // pausa: solo P/Esc actúan
   switch (e.code) {
     case 'KeyE':
       openMenu();
