@@ -305,3 +305,66 @@ kbd {
 #restart-btn:hover, .mode-btn:hover {
   background: var(--accent-hover);
 }
+
+/* ---- Records ---- */
+#records {
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+#records .records-title {
+  color: var(--label);
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+}
+
+#records-list {
+  list-style-position: inside;
+  text-align: left;
+  display: inline-block;
+  min-width: 170px;
+}
+
+#records-list li.new {
+  color: var(--accent);
+  font-weight: 700;
+  background: var(--kbd-bg);
+}
+
+#records-extra {
+  color: var(--muted);
+  margin: 6px 0;
+}
+
+#name-form {
+  margin-bottom: 10px;
+}
+
+#name-form[hidden] {
+  display: none;
+}
+
+#name-form label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+#player-name {
+  width: 110px;
+  padding: 4px 6px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+#name-form button, #reset-records {
+  background: none;
+  color: var(--accent);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
