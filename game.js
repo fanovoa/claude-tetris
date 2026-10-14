@@ -85,7 +85,7 @@ const holdSection = document.getElementById('hold-section');
 const ENERGY_MAX = 10;         // 1 línea = 1 de energía
 const PREVIEW_PIECES = 10;     // piezas que dura "ver 5 piezas"
 const SLOW_TIME = 10000;
-const ABILITIES = ['Ver 5 piezas', 'Intercambiar pieza', 'Ralentizar 10 s', 'Deshacer colocación', 'Hold (C)'];
+const ABILITIES = ['Ver 5 piezas', 'Intercambiar pieza', 'Ralentizar 10 s', 'Deshacer colocación'];
 
 let gridColor = '#22222e';
 
@@ -259,7 +259,7 @@ function lockPiece() {
   // ponytail: el undo no restaura timers (tinte/congelar), reloj de desafío ni basura D2; agregar si se abusa
   undoSnap = {
     type: current.type, board: board.map(r => [...r]), score, lines, level, combo, b2b, dropInterval,
-    next, upcoming: [...upcoming],
+    next, upcoming: [...upcoming], hold, holdReady,
   };
   const before = lines;
   const tspin = current.type < POWER && isTSpin(); // antes de merge: las esquinas no incluyen la propia T
@@ -311,6 +311,7 @@ function lockPiece() {
   }
   updateHUD();
   if (checkGoal()) return;
+  holdReady = true;
   spawn();
   if (gameOver) return;
   if (Math.floor(lines / POWER_EVERY) > Math.floor(before / POWER_EVERY))
@@ -529,7 +530,7 @@ function drawNext() {
     upcoming.forEach((p, i) => drawPreview(queueCtx, p, 12, 16, i * 48));
   }
 
-  holdSection.classList.toggle('off', !holdReady && !hold);
+  holdSection.classList.toggle('off', !holdReady);
   holdCtx.clearRect(0, 0, holdCanvas.width, holdCanvas.height);
   if (hold) drawPreview(holdCtx, hold, 20, 0, 0);
 }
@@ -566,7 +567,7 @@ function useAbility(n) {
     case 4: {
       if (!undoSnap) return;
       const s = undoSnap;
-      ({ board, score, lines, level, combo, b2b, dropInterval, next, upcoming } = s);
+      ({ board, score, lines, level, combo, b2b, dropInterval, next, upcoming, hold, holdReady } = s);
       current = makePiece(s.type);
       lastRotate = false;
       dropAccum = 0;
@@ -575,7 +576,6 @@ function useAbility(n) {
       undoSnap = null;
       break;
     }
-    case 5: holdReady = true; break;
   }
   spendAndClose();
 }
@@ -586,7 +586,7 @@ function handleMenuKey(e) {
     return;
   }
   if (menu === 'abilities') {
-    if (e.key >= '1' && e.key <= '5') useAbility(+e.key);
+    if (e.key >= '1' && e.key <= '4') useAbility(+e.key);
     return;
   }
   if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
@@ -610,11 +610,11 @@ function useHold() {
   } else {
     const p = hold;
     if (collide(p.shape, p.x, p.y)) return;
+    hold = makePiece(current.type);
     current = p;
-    hold = null;
-    holdReady = false;
     lastRotate = false;
   }
+  holdReady = false;
   drawNext();
 }
 
@@ -706,7 +706,7 @@ function init(m) {
   menu = null;
   previewLeft = 0;
   slowLeft = 0;
-  holdReady = false;
+  holdReady = true;
   hold = null;
   undoSnap = null;
   next = randomPiece();

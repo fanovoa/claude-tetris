@@ -23,7 +23,7 @@ Tres archivos: `index.html` (DOM + dos canvas), `style.css` y `game.js` (toda la
 
 ## Habilidades
 
-`energy` (0–10, +1 por línea en `clearLines()`) se gasta entera con la tecla E: `openMenu()` cancela el loop y `menu` (`'abilities'`/`'swap'`) captura el teclado vía `handleMenuKey()`; `closeMenu()` reanuda el loop. `upcoming` (4 piezas tras `next`) alimenta `spawn()`; `undoSnap` se guarda al inicio de `lockPiece()`; `hold`/`holdReady` los usa la tecla C.
+`energy` (0–10, +1 por línea en `clearLines()`) se gasta entera con la tecla E: `openMenu()` cancela el loop y `menu` (`'abilities'`/`'swap'`) captura el teclado vía `handleMenuKey()`; `closeMenu()` reanuda el loop. `upcoming` (4 piezas tras `next`) alimenta `spawn()`; `undoSnap` se guarda al inicio de `lockPiece()`; `hold`/`holdReady` los usa la tecla C: el hold es permanente, una vez por pieza (`useHold()` pone `holdReady = false`, `lockPiece()` lo reactiva y `undoSnap` lo restaura); el slot se atenúa con `.off` mientras está bloqueado.
 
 ## Cuidado
 
