@@ -368,3 +368,25 @@ kbd {
   font-size: 12px;
   cursor: pointer;
 }
+
+/* ---- Skins ---- */
+.skin-select {
+  position: absolute;
+  top: 0;
+  right: 100px;
+  background: var(--kbd-bg);
+  border: 2px solid var(--kbd-border);
+  border-radius: 3px;
+  color: var(--kbd-text);
+  padding: 5px 6px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+html[data-skin="neon"] #board,
+html[data-skin="neon"] #next-canvas,
+html[data-skin="neon"] #queue-canvas,
+html[data-skin="neon"] #hold-canvas {
+  background: #000;
+}

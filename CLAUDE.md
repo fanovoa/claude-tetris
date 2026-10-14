@@ -33,3 +33,7 @@ Tres archivos: `index.html` (DOM + dos canvas), `style.css` y `game.js` (toda la
 ## Records
 
 `localStorage['tetris-records']` = `{ top: [{name, score}], bestCombo, maxLines }` (top 5), siempre con try/catch (`loadRecords`/`saveRecords`). `endGame()` llama a `finishRecords()`: actualiza bestCombo (`maxCombo`, de `lockPiece()`) y maxLines, y si el score entra al top muestra `#name-form`; el submit inserta, marca la fila `.new` y hace blur. El keydown global ignora teclas cuando `e.target` es un INPUT. Bloque `#records` dentro de `.overlay-box`; también aparece en la pausa.
+
+## Skins
+
+`skin` (`retro`/`neon`/`pastel`/`pixel`, en `localStorage['tetris-skin']`) se elige con `#skin-select`; `applySkin()` fija `colors` (paleta activa; `COLORS` es la retro, pastel se deriva con `pastelize`), `data-skin` en `<html>` (fondo negro en neon) y `gridColor`. `drawBlock` sigue siendo el único punto que pinta bloques; las skins no-retro delegan en `drawBlockSkin`. Todo el código de skins está en el bloque `// ---- Skins ----` al final de `game.js`.
