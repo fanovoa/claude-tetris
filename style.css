@@ -125,12 +125,32 @@ body {
 }
 
 /* ---- Panel lateral ---- */
+[hidden] { display: none !important; }
+
 .panel {
-  width: 160px;
+  width: 130px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
   padding-top: 4px;
+}
+
+.panel-left {
+  width: 90px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.stats .value {
+  font-size: 18px;
+}
+
+.off {
+  opacity: 0.3;
 }
 
 .panel-section {
@@ -154,7 +174,12 @@ body {
   letter-spacing: 1px;
 }
 
-#next-canvas {
+#energy {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+#next-canvas, #queue-canvas, #hold-canvas {
   display: block;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -162,11 +187,50 @@ body {
 }
 
 /* ---- Controles ---- */
-.controls ul {
+.controls-box {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+}
+
+.controls-box summary {
+  display: inline-block;
   list-style: none;
+  background: var(--kbd-bg);
+  border: 2px solid var(--kbd-border);
+  border-radius: 3px;
+  box-shadow: 0 3px 0 var(--kbd-border);
+  color: var(--kbd-text);
+  padding: 4px 10px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  cursor: pointer;
+}
+
+.controls-box summary::-webkit-details-marker { display: none; }
+.controls-box summary::after { content: ' ▸'; }
+.controls-box[open] summary::after { content: ' ▾'; }
+
+.controls-box summary:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* La lista va bajo el tablero; el botón de arriba (details) la muestra/oculta */
+.controls {
+  display: none;
+  list-style: none;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 14px;
+  margin-top: 12px;
+}
+
+.controls-box[open] ~ .controls {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
 }
 
 .controls li {

@@ -11,9 +11,24 @@
   <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false" aria-label="Cambiar a modo claro">
     <span class="theme-icon" aria-hidden="true">☁</span><span class="theme-label">DARK</span>
   </button>
+  <details class="controls-box">
+    <summary>CONTROLES</summary>
+  </details>
   <h1 class="title">TETRIS</h1>
   <div class="wrapper">
     <div class="game-container">
+      <aside class="panel panel-left">
+        <div class="panel-section off" id="hold-section">
+          <span class="label">HOLD (C)</span>
+          <canvas id="hold-canvas" width="80" height="80"></canvas>
+        </div>
+
+        <div class="panel-section">
+          <span class="label">ENERGÍA (E)</span>
+          <progress id="energy" max="10" value="0"></progress>
+        </div>
+      </aside>
+
       <canvas id="board" width="300" height="600"></canvas>
 
       <aside class="panel">
@@ -21,38 +36,30 @@
           <span class="label">SCORE</span>
           <span class="value" id="score">0</span>
         </div>
-        <div class="panel-section">
-          <span class="label">LINES</span>
-          <span class="value" id="lines">0</span>
-        </div>
-        <div class="panel-section">
-          <span class="label">LEVEL</span>
-          <span class="value" id="level">1</span>
-        </div>
-        <div class="panel-section">
-          <span class="label">COMBO</span>
-          <span class="value" id="combo">—</span>
-        </div>
 
-        <div class="panel-section">
-          <span class="label">OBJETIVO</span>
-          <span class="value" id="goal">—</span>
+        <div class="stats">
+          <div class="panel-section">
+            <span class="label">LINES</span>
+            <span class="value" id="lines">0</span>
+          </div>
+          <div class="panel-section">
+            <span class="label">LEVEL</span>
+            <span class="value" id="level">1</span>
+          </div>
+          <div class="panel-section">
+            <span class="label">COMBO</span>
+            <span class="value" id="combo">—</span>
+          </div>
+          <div class="panel-section">
+            <span class="label">OBJETIVO</span>
+            <span class="value" id="goal">—</span>
+          </div>
         </div>
 
         <div class="panel-section">
           <span class="label">NEXT</span>
-          <canvas id="next-canvas" width="120" height="120"></canvas>
-        </div>
-
-        <div class="panel-section controls">
-          <span class="label">CONTROLS</span>
-          <ul>
-            <li><kbd>←</kbd><kbd>→</kbd> mover</li>
-            <li><kbd>↑</kbd> rotar</li>
-            <li><kbd>↓</kbd> bajar</li>
-            <li><kbd>Space</kbd> caída</li>
-            <li><kbd>P</kbd> pausa</li>
-          </ul>
+          <canvas id="next-canvas" width="80" height="80"></canvas>
+          <canvas id="queue-canvas" width="80" height="192" hidden></canvas>
         </div>
       </aside>
     </div>
@@ -69,6 +76,16 @@
       </div>
     </div>
   </div>
+
+  <ul class="controls">
+    <li><kbd>←</kbd><kbd>→</kbd> mover</li>
+    <li><kbd>↑</kbd> rotar</li>
+    <li><kbd>↓</kbd> bajar</li>
+    <li><kbd>Space</kbd> caída</li>
+    <li><kbd>P</kbd> pausa</li>
+    <li><kbd>E</kbd> habilidad</li>
+    <li><kbd>C</kbd> hold</li>
+  </ul>
   </main>
 
   <script src="game.js"></script>
