@@ -29,3 +29,7 @@ Tres archivos: `index.html` (DOM + dos canvas), `style.css` y `game.js` (toda la
 
 - El tamaño de los canvas está fijo en `index.html` (`board` 300×600, `next-canvas` 120×120). Si cambias `COLS`, `ROWS` o `BLOCK` en `game.js`, actualiza `width`/`height` allí a `COLS×BLOCK` / `ROWS×BLOCK`.
 - Las vistas previas usan `drawPreview` con cuadrícula 4×4 y bloque fijo: `next-canvas` y `hold-canvas` 80×80 (20px), `queue-canvas` 80×192 (12px). Si cambias el tamaño de un canvas, ajusta el bloque en `drawNext`.
+
+## Skins
+
+`skin` (`retro`/`neon`/`pastel`/`pixel`, en `localStorage['tetris-skin']`) se elige con `#skin-select`; `applySkin()` fija `colors` (paleta activa; `COLORS` es la retro, pastel se deriva con `pastelize`), `data-skin` en `<html>` (fondo negro en neon) y `gridColor`. `drawBlock` sigue siendo el único punto que pinta bloques; las skins no-retro delegan en `drawBlockSkin`. Todo el código de skins está en el bloque `// ---- Skins ----` al final de `game.js`.
