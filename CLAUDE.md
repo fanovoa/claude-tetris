@@ -32,7 +32,7 @@ Tres archivos: `index.html` (DOM + dos canvas), `style.css` y `game.js` (toda la
 
 ## Records
 
-`localStorage['tetris-records']` = `{ top: [{name, score}], bestCombo, maxLines }` (top 5), siempre con try/catch (`loadRecords`/`saveRecords`). `endGame()` llama a `finishRecords()`: actualiza bestCombo (`maxCombo`, de `lockPiece()`) y maxLines, y si el score entra al top muestra `#name-form`; el submit inserta, marca la fila `.new` y hace blur. El keydown global ignora teclas cuando `e.target` es un INPUT. Bloque `#records` dentro de `.overlay-box`; también aparece en la pausa.
+`localStorage['tetris-records']` = `{ top: [{name, score}], bestCombo, maxLines }` (top 5), siempre con try/catch (`loadRecords`/`saveRecords`). `endGame()` llama a `finishRecords()`: actualiza bestCombo (`maxCombo`, de `lockPiece()`) y maxLines, y si el score entra al top muestra `#name-form`; el submit inserta, marca la fila `.new` y hace blur. El keydown global ignora teclas cuando `e.target` es un INPUT. Bloque `#records` dentro de `.overlay-box` (solo en game over; la pausa usa `#pause-menu`).
 
 ## Skins
 
