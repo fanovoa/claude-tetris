@@ -29,3 +29,8 @@ Tres archivos: `index.html` (DOM + dos canvas), `style.css` y `game.js` (toda la
 
 - El tamaño de los canvas está fijo en `index.html` (`board` 300×600, `next-canvas` 120×120). Si cambias `COLS`, `ROWS` o `BLOCK` en `game.js`, actualiza `width`/`height` allí a `COLS×BLOCK` / `ROWS×BLOCK`.
 - Las vistas previas usan `drawPreview` con cuadrícula 4×4 y bloque fijo: `next-canvas` y `hold-canvas` 80×80 (20px), `queue-canvas` 80×192 (12px). Si cambias el tamaño de un canvas, ajusta el bloque en `drawNext`.
+
+## Menú de pausa
+
+P o Escape (si no hay `menu` de habilidades ni game over) alternan `togglePause()`, que muestra `#pause-menu` (hermano de `#overlay`, no lo reutiliza): Reanudar, Reiniciar (`init()` conserva `mode`), Ver controles y `#start-level`. Con `paused` solo P/Esc actúan en el keydown.
+`startLevel` (1–10) lo usan `init()` (nivel y `dropInterval` iniciales) y `baseLevel` (copia por partida) en `clearLines()`; aplica a la siguiente partida. Al reanudar se hace `blur()` y se reinician `lastTime`/`dropAccum`.
