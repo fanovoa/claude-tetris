@@ -27,6 +27,11 @@
           <span class="label">ENERGÍA (E)</span>
           <progress id="energy" max="10" value="0"></progress>
         </div>
+
+        <div class="panel-section live-records" id="live-records">
+          <span class="label" id="live-label">RÉCORDS</span>
+          <ol id="live-list" class="rec-list"></ol>
+        </div>
       </aside>
 
       <canvas id="board" width="300" height="600"></canvas>
@@ -71,6 +76,17 @@
           <span>Nivel <b id="stat-level"></b></span>
           <span>Puntaje <b id="stat-score"></b></span>
         </div>
+        <form id="record-form" hidden>
+          <p class="new-record">¡NUEVO RÉCORD!</p>
+          <input id="record-name" maxlength="12" placeholder="Tu nombre" autocomplete="off" required />
+          <button>Guardar</button>
+        </form>
+        <section class="hiscores">
+          <h2 id="records-title">TOP 5</h2>
+          <ol id="records" class="rec-list"></ol>
+          <div id="bests"></div>
+          <button id="reset-records" type="button" class="link-btn">Borrar récords</button>
+        </section>
         <div class="overlay-cols">
           <section class="overlay-col">
             <h2>Partida</h2>
@@ -86,10 +102,10 @@
           </section>
           <section class="overlay-col">
             <h2>Modo de juego</h2>
-            <button class="mode-btn" data-mode="0">Normal<small>Sin límite</small></button>
-            <button class="mode-btn" data-mode="1">Desafío 1<small>40 líneas en 2:00</small></button>
-            <button class="mode-btn" data-mode="2">Desafío 2<small>Sobrevive 2:00</small></button>
-            <button class="mode-btn" data-mode="3">Desafío 3<small>Limpia los fijos</small></button>
+            <button class="mode-btn" data-mode="0"><b>Normal</b><small>Sin límite</small></button>
+            <button class="mode-btn" data-mode="1"><b>Desafío 1</b><small>40 líneas en 2:00</small></button>
+            <button class="mode-btn" data-mode="2"><b>Desafío 2</b><small>Sobrevive 2:00</small></button>
+            <button class="mode-btn" data-mode="3"><b>Desafío 3</b><small>Limpia los fijos</small></button>
           </section>
         </div>
       </div>

@@ -87,7 +87,21 @@ const pauseControls = document.getElementById('pause-controls');
 const startLevelEl = document.getElementById('start-level');
 pauseControls.append(document.querySelector('.controls').cloneNode(true));
 
-const ENERGY_MAX = 10;         // 1 línea = 1 de energía
+const recordForm = document.getElementById('record-form');
+const recordName = document.getElementById('record-name');
+const recordsEl = document.getElementById('records');
+const liveList = document.getElementById('live-list');
+const recordsTitle = document.getElementById('records-title');
+const liveLabel = document.getElementById('live-label');
+const bestsEl = document.getElementById('bests');
+const resetRecordsBtn = document.getElementById('reset-records');
+
+const RECORDS_KEY = 'tetris-records';
+const TOP_N = 5;
+const MODE_TAGS = ['N', 'D1', 'D2', 'D3'];
+const MODE_NAMES = ['Normal', 'Desafío 1', 'Desafío 2', 'Desafío 3'];
+
+const ENERGY_MAX = 10;        // 1 línea = 1 de energía
 const PREVIEW_PIECES = 10;     // piezas que dura "ver 5 piezas"
 const SLOW_TIME = 10000;
 const ABILITIES = ['Ver 5 piezas', 'Intercambiar pieza', 'Ralentizar 10 s', 'Deshacer colocación'];
@@ -95,7 +109,7 @@ const ABILITIES = ['Ver 5 piezas', 'Intercambiar pieza', 'Ralentizar 10 s', 'Des
 let gridColor = '#22222e';
 
 let board, current, next, score, lines, level, paused, gameOver = true, lastTime, dropAccum, dropInterval, animId, tintLeft, freezeLeft, flashText, flashLeft;
-let combo, b2b, lastRotate, popups, shakeLeft, shakeMag, flashRows, flashRowsLeft;
+let maxCombo, combo, b2b, lastRotate, popups, shakeLeft, shakeMag, flashRows, flashRowsLeft;
 let startLevel = 1;
 let mode = 0, timeLeft, garbageAccum, fades; // mode: 0 normal, 1–3 desafíos
 let energy, menu, swapSel, upcoming, previewLeft, slowLeft, holdReady, hold, undoSnap; // menu: null | 'abilities' | 'swap'
@@ -286,6 +300,7 @@ function lockPiece() {
   }
   if (cleared) {
     combo = Math.min(combo + 1, MAX_COMBO);
+    maxCombo = Math.max(maxCombo, combo);
     const hard = cleared === 4 || tspin;
     let pts = (tspin ? TSPIN_SCORES[Math.min(cleared, 3)] : LINE_SCORES[cleared]) * level * nut * combo;
     if (hard && b2b) pts *= 1.5;
@@ -630,13 +645,61 @@ function showStats() {
   overlayStats.hidden = false;
 }
 
+function loadRecords() {
+  const empty = { top: [], best: {}, name: '' }; // best[modo] = { combo, lines }
+  try {
+    const r = JSON.parse(localStorage.getItem(RECORDS_KEY));
+    if (!r || !Array.isArray(r.top)) return empty;
+    return { ...empty, ...r, best: r.best && typeof r.best === 'object' ? r.best : {} };
+  } catch (e) { return empty; } // storage bloqueado o JSON corrupto
+}
+
+const modeTop = (rec, m) => rec.top.filter(t => t.mode === m); // ya ordenado desc
+
+function saveRecords(rec) {
+  try { localStorage.setItem(RECORDS_KEY, JSON.stringify(rec)); } catch (e) { /* sin storage: no se persiste */ }
+}
+
+function renderRecords(hi = -1) {
+  const rec = loadRecords();
+  const el = (tag, text, cls) => {
+    const e = document.createElement(tag);
+    e.textContent = text; // textContent: el nombre es input del usuario
+    if (cls) e.className = cls;
+    return e;
+  };
+  const top = modeTop(rec, mode);
+  recordsTitle.textContent = `TOP 5 · ${MODE_NAMES[mode].toUpperCase()}`;
+  liveLabel.textContent = `RÉCORDS · ${MODE_TAGS[mode]}`;
+  for (const list of [recordsEl, liveList]) { // overlay + panel en vivo
+    list.replaceChildren();
+    top.forEach((t, i) => {
+      const li = el('li', '', i === hi ? 'me' : '');
+      li.append(el('span', t.name), el('span', t.score.toLocaleString()));
+      list.append(li);
+    });
+    if (!top.length) list.append(el('li', 'Sin récords aún', 'empty'));
+  }
+  const b = rec.best[mode] || {};
+  const stat = (label, value) => { const s = el('span', label); s.append(el('b', value)); return s; };
+  bestsEl.replaceChildren(stat('Mejor combo', `×${Number(b.combo) || 0}`), stat('Líneas máx.', Number(b.lines) || 0));
+}
+
 function endGame(title = 'GAME OVER') {
   gameOver = true;
   cancelAnimationFrame(animId);
   overlayTitle.textContent = title;
   showStats();
   resumeBtn.hidden = pauseControls.hidden = true;
+  const rec = loadRecords();
+  const b = rec.best[mode] || {};
+  rec.best[mode] = { combo: Math.max(Number(b.combo) || 0, maxCombo), lines: Math.max(Number(b.lines) || 0, lines) };
+  saveRecords(rec);
+  const top = modeTop(rec, mode);
+  recordForm.hidden = !(score > 0 && (top.length < TOP_N || score > top[TOP_N - 1].score));
+  renderRecords();
   overlay.classList.remove('hidden');
+  if (!recordForm.hidden) { recordName.value = rec.name; recordName.focus(); }
 }
 
 function togglePause() {
@@ -654,6 +717,7 @@ function togglePause() {
     overlayTitle.textContent = 'PAUSA';
     showStats();
     resumeBtn.hidden = pauseControls.hidden = false;
+    recordForm.hidden = true;
     overlay.classList.remove('hidden');
   }
 }
@@ -714,6 +778,7 @@ function init(m) {
   freezeLeft = 0;
   flashLeft = 0;
   combo = 0;
+  maxCombo = 0;
   b2b = false;
   lastRotate = false;
   popups = [];
@@ -734,12 +799,15 @@ function init(m) {
   upcoming = Array.from({ length: 4 }, randomPiece);
   spawn();
   updateHUD();
+  recordForm.hidden = true;
+  renderRecords(); // la tabla sigue al modo elegido
   overlay.classList.add('hidden');
   cancelAnimationFrame(animId);
   animId = requestAnimationFrame(loop);
 }
 
 document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return; // escribir el nombre no dispara teclas del juego
   if (menu) { handleMenuKey(e); return; }
   if (e.code === 'KeyP' || e.code === 'Escape') { togglePause(); return; }
   if (paused || gameOver) return;
@@ -773,6 +841,30 @@ document.addEventListener('keydown', e => {
 
 restartBtn.addEventListener('click', () => { init(); restartBtn.blur(); });
 resumeBtn.addEventListener('click', togglePause);
+
+recordForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const rec = loadRecords();
+  const entry = { name: recordName.value.trim() || 'Anónimo', score, mode };
+  rec.name = entry.name;
+  rec.top.push(entry);
+  rec.top.sort((a, b) => b.score - a.score);
+  const seen = {};
+  rec.top = rec.top.filter(t => (seen[t.mode] = (seen[t.mode] || 0) + 1) <= TOP_N); // top 5 por modo
+  saveRecords(rec);
+  recordForm.hidden = true;
+  renderRecords(modeTop(rec, mode).indexOf(entry));
+});
+
+resetRecordsBtn.addEventListener('click', () => {
+  resetRecordsBtn.blur(); // evita que Space (hard drop) lo reactive
+  if (!confirm('¿Borrar los récords de todos los modos?')) return;
+  try { localStorage.removeItem(RECORDS_KEY); } catch (e) { /* ignorar */ }
+  recordForm.hidden = true;
+  renderRecords();
+});
+
+renderRecords();
 modeBtns.forEach(b => b.addEventListener('click', () => {
   init(+b.dataset.mode);
   b.blur(); // evita que Space (hard drop) reactive el botón
