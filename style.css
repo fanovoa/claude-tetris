@@ -394,10 +394,10 @@ kbd {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   align-items: stretch;
   text-align: center;
-  padding: 16px;
+  padding: 12px;
   background: var(--card-bg);
   border: 2px solid var(--neon-a);
   border-radius: 6px;
@@ -436,7 +436,7 @@ kbd {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0;
-  margin-top: 8px;
+  margin-top: 0;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -445,16 +445,18 @@ kbd {
 .overlay-col {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   width: 190px;
-  padding: 16px;
+  padding: 12px;
 }
 
 .overlay-col + .overlay-col { border-left: 1px solid var(--border); }
 
 .overlay-col h2 {
-  font-size: 11px;
-  letter-spacing: 2px;
+  font-size: 9px;
+  line-height: 1.4;
+  white-space: nowrap;
+  letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--label);
   text-align: left;
@@ -506,7 +508,9 @@ kbd {
 #pause-controls .controls { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
 
 .start-level {
-  font-size: 13px;
+  font-size: 9px;
+  line-height: 1.4;
+  white-space: nowrap;
   color: var(--muted);
   display: flex;
   align-items: center;

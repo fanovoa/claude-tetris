@@ -303,7 +303,7 @@ function lockPiece() {
     combo = Math.min(combo + 1, MAX_COMBO);
     maxCombo = Math.max(maxCombo, combo);
     const hard = cleared === 4 || tspin;
-    let pts = (tspin ? TSPIN_SCORES[Math.min(cleared, 3)] : LINE_SCORES[cleared]) * level * nut * combo;
+    let pts = (tspin ? TSPIN_SCORES[Math.min(cleared, 3)] : LINE_SCORES[Math.min(cleared, 4)]) * level * nut * combo;
     if (hard && b2b) pts *= 1.5;
     const perfect = board.every(r => r.every(v => !v));
     if (perfect) pts += PERFECT_BONUS * level;
