@@ -75,6 +75,7 @@ const overlayStats = document.getElementById('overlay-stats');
 const modeBtns = document.querySelectorAll('.mode-btn');
 const restartBtn = document.getElementById('restart-btn');
 const themeToggle = document.getElementById('theme-toggle');
+const skinBtns = document.querySelectorAll('.skin-btn');
 const goalEl = document.getElementById('goal');
 const energyEl = document.getElementById('energy');
 const queueCanvas = document.getElementById('queue-canvas');
@@ -400,15 +401,238 @@ function updateHUD() {
   updateGoal();
 }
 
+const NEON_COLORS = [
+  null,
+  '#00f0ff', '#fff700', '#d400ff', '#39ff14', '#ff073a', '#2979ff', '#ff9100',
+  '#c0c0ff', '#ff2d95', '#00ffc8', '#e6ff00', '#ffffff',
+  '#6a6a6a', '#ffff33', '#e040fb', '#ff8a50', '#4dffff', '#8899aa',
+];
+
+const PASTEL_COLORS = [
+  null,
+  '#b5ead7', '#fff1b8', '#d7c4f0', '#c9f0c9', '#ffc6c6', '#c4dcff', '#ffd9b3',
+  '#dde3e8', '#ffcfe0', '#bfeee6', '#fff7b0', '#fffafa',
+  '#8e8e99', '#fff9c4', '#e6d0f2', '#d9c7bd', '#c7f0f5', '#b0bcc4',
+];
+
+// Variantes para tema claro: más saturadas/oscuras para que se lean sobre fondo blanco.
+const LIGHT_COLORS = [
+  null,
+  '#00acc1', '#fbc02d', '#8e24aa', '#43a047', '#e53935', '#1e88e5', '#fb8c00',
+  '#78909c', '#d81b60', '#00897b', '#c0ca33', '#5d4037',
+  '#212121', '#f9a825', '#ab47bc', '#8d6e63', '#26c6da', '#607d8b',
+];
+
+const PASTEL_LIGHT_COLORS = [
+  null,
+  '#7fd6c0', '#ffe082', '#c3a6e8', '#a5dca5', '#ffa8a8', '#9cc4f5', '#ffc78a',
+  '#b9c4cc', '#ff9fc0', '#8fdccf', '#f2e56b', '#9fa8b3',
+  '#6d6d78', '#ffe94d', '#d9a8ec', '#bfa79b', '#8fdde6', '#8fa0ab',
+];
+
+const LCD_SHADES = ['#0f380f', '#306230', '#1e4a1e']; // sobre fondo #9bbc0f (CSS)
+const LCD_COLORS = COLORS.map((c, i) => (i ? LCD_SHADES[i % 3] : null));
+const BLUEPRINT_COLORS = COLORS.map((c, i) => (i === 13 ? '#ffffff' : c)); // la bomba (#212121) no se vería sobre azul
+
+const OUTRUN_SHADES = ['#ff2e97', '#00e5ff', '#b967ff', '#ff7a00', '#ffe600']; // sobre fondo #1a0b2e (CSS)
+const OUTRUN_COLORS = COLORS.map((c, i) => (!i ? null : i === 13 ? '#ffffff' : i === 18 ? '#8a77ad' : OUTRUN_SHADES[i % 5]));
+
+const VINTAGE_SHADES = ['#b5542f', '#d9a441', '#3e7c7a', '#6b7f3a', '#8b3a3a', '#4a6a8a', '#c97b3d']; // sobre papel #e8d9b5 (CSS)
+const VINTAGE_COLORS = COLORS.map((c, i) => (!i ? null : i === 13 ? '#2b1d12' : i === 12 ? '#7a5c3a' : i === 18 ? '#8c7b66' : VINTAGE_SHADES[i % 7]));
+const CRT_SHADES = ['#33ff66', '#22cc55', '#66ff99']; // sobre fondo negro (CSS)
+const CRT_COLORS = COLORS.map((c, i) => (i ? CRT_SHADES[i % 3] : null));
+const WOOD_SHADES = ['#c68642', '#a0522d', '#deb887', '#8b5a2b', '#d2a679', '#b5651d']; // sobre madera oscura #2b1a10 (CSS)
+const WOOD_COLORS = COLORS.map((c, i) => (!i ? null : i === 13 ? '#e0e0e0' : i === 12 ? '#f5deb3' : i === 18 ? '#6d6d6d' : WOOD_SHADES[i % 6]));
+
+// Cada skin: paleta (+ variante `light`) y cómo se pinta una celda (px, py = esquina en píxeles, s = tamaño).
+const SKINS = {
+  retro: {
+    colors: COLORS,
+    light: LIGHT_COLORS,
+    cell(c, px, py, s, color) {
+      c.fillStyle = color;
+      c.fillRect(px + 1, py + 1, s - 2, s - 2);
+      c.fillStyle = 'rgba(255,255,255,0.12)';
+      c.fillRect(px + 1, py + 1, s - 2, 4);
+    },
+  },
+  neon: {
+    colors: NEON_COLORS,
+    cell(c, px, py, s, color) {
+      c.shadowBlur = 12;
+      c.shadowColor = color;
+      c.fillStyle = color;
+      c.fillRect(px + 2, py + 2, s - 4, s - 4);
+      c.shadowBlur = 0;
+    },
+  },
+  pastel: {
+    colors: PASTEL_COLORS,
+    light: PASTEL_LIGHT_COLORS,
+    cell(c, px, py, s, color) {
+      c.fillStyle = color;
+      c.beginPath();
+      c.roundRect(px + 1, py + 1, s - 2, s - 2, s / 4);
+      c.fill();
+    },
+  },
+  pixel: {
+    colors: COLORS,
+    light: LIGHT_COLORS,
+    cell(c, px, py, s, color) {
+      const p = Math.max(2, Math.round(s / 6));
+      const x = px + 1, y = py + 1, w = s - 2;
+      c.fillStyle = color;
+      c.fillRect(x, y, w, w);
+      c.fillStyle = 'rgba(255,255,255,0.45)'; // luz arriba/izquierda
+      c.fillRect(x, y, w, p);
+      c.fillRect(x, y, p, w);
+      c.fillStyle = 'rgba(0,0,0,0.35)';        // sombra abajo/derecha
+      c.fillRect(x, y + w - p, w, p);
+      c.fillRect(x + w - p, y, p, w);
+      c.fillStyle = 'rgba(255,255,255,0.6)';   // brillo interior
+      c.fillRect(x + 2 * p, y + 2 * p, p, p);
+    },
+  },
+  lcd: {
+    colors: LCD_COLORS,
+    cell(c, px, py, s, color) {
+      c.fillStyle = color;
+      c.fillRect(px + 1, py + 1, s - 2, s - 2);
+      c.strokeStyle = '#9bbc0f'; // anillo claro interior, como los bloques del Game Boy
+      c.lineWidth = 1;
+      c.strokeRect(px + 3.5, py + 3.5, s - 7, s - 7);
+    },
+  },
+  glass: {
+    colors: COLORS,
+    light: LIGHT_COLORS,
+    cell(c, px, py, s, color) {
+      c.fillStyle = color;
+      c.fillRect(px + 1, py + 1, s - 2, s - 2);
+      const g = c.createLinearGradient(px, py, px + s, py + s);
+      g.addColorStop(0, 'rgba(255,255,255,0.6)');
+      g.addColorStop(0.5, 'rgba(255,255,255,0.05)');
+      g.addColorStop(1, 'rgba(0,0,0,0.25)');
+      c.fillStyle = g;
+      c.fillRect(px + 1, py + 1, s - 2, s - 2);
+      c.strokeStyle = 'rgba(255,255,255,0.7)';
+      c.lineWidth = 1;
+      c.strokeRect(px + 1.5, py + 1.5, s - 3, s - 3);
+    },
+  },
+  outrun: {
+    colors: OUTRUN_COLORS,
+    cell(c, px, py, s, color) {
+      c.shadowBlur = 8;
+      c.shadowColor = color;
+      c.fillStyle = color;
+      c.fillRect(px + 1, py + 1, s - 2, s - 2);
+      c.shadowBlur = 0;
+      const g = c.createLinearGradient(0, py, 0, py + s); // atardecer: se oscurece hacia abajo
+      g.addColorStop(0.3, 'rgba(60,0,100,0)');
+      g.addColorStop(1, 'rgba(60,0,100,0.6)');
+      c.fillStyle = g;
+      c.fillRect(px + 1, py + 1, s - 2, s - 2);
+      c.fillStyle = 'rgba(255,255,255,0.7)'; // línea de horizonte
+      c.fillRect(px + 1, py + 1, s - 2, 2);
+    },
+  },
+  goma: {
+    colors: COLORS,
+    light: LIGHT_COLORS,
+    cell(c, px, py, s, color) {
+      c.fillStyle = color;
+      c.beginPath();
+      c.roundRect(px + 1, py + 1, s - 2, s - 2, s / 3);
+      c.fill();
+      c.strokeStyle = 'rgba(0,0,0,0.25)'; // borde inferior más oscuro: volumen
+      c.lineWidth = 1;
+      c.stroke();
+      c.fillStyle = 'rgba(255,255,255,0.55)'; // brillo de gominola
+      c.beginPath();
+      c.ellipse(px + s * 0.34, py + s * 0.3, s * 0.18, s * 0.1, -0.5, 0, Math.PI * 2);
+      c.fill();
+    },
+  },
+  vintage: {
+    colors: VINTAGE_COLORS,
+    cell(c, px, py, s, color) {
+      c.fillStyle = color;
+      c.fillRect(px + 1, py + 1, s - 2, s - 2);
+      c.strokeStyle = 'rgba(40,25,10,0.3)'; // trama diagonal de impresión antigua
+      c.lineWidth = 1;
+      c.beginPath();
+      for (let d = 4; d < 2 * s - 4; d += 4) {
+        c.moveTo(px + Math.min(d, s - 1), py + Math.max(0, d - s + 1));
+        c.lineTo(px + Math.max(0, d - s + 1), py + Math.min(d, s - 1));
+      }
+      c.stroke();
+      c.strokeStyle = '#3b2a1a'; // tinta
+      c.lineWidth = 2;
+      c.strokeRect(px + 2, py + 2, s - 4, s - 4);
+    },
+  },
+  crt: {
+    colors: CRT_COLORS,
+    cell(c, px, py, s, color) {
+      c.shadowBlur = 6;
+      c.shadowColor = color;
+      c.fillStyle = color;
+      c.fillRect(px + 1, py + 1, s - 2, s - 2);
+      c.shadowBlur = 0;
+      c.fillStyle = 'rgba(0,0,0,0.5)'; // líneas de barrido
+      for (let y = py + 2; y < py + s - 1; y += 3) c.fillRect(px + 1, y, s - 2, 1);
+    },
+  },
+  wood: {
+    colors: WOOD_COLORS,
+    cell(c, px, py, s, color) {
+      c.fillStyle = color;
+      c.fillRect(px + 1, py + 1, s - 2, s - 2);
+      c.fillStyle = 'rgba(255,255,255,0.15)';
+      c.fillRect(px + 1, py + 1, s - 2, 3);
+      c.strokeStyle = 'rgba(60,30,10,0.4)'; // vetas
+      c.lineWidth = 1;
+      c.beginPath();
+      [0.38, 0.68].forEach(k => {
+        c.moveTo(px + 2, py + s * k);
+        c.quadraticCurveTo(px + s / 2, py + s * k - s * 0.12, px + s - 2, py + s * k);
+      });
+      c.stroke();
+      c.strokeStyle = 'rgba(0,0,0,0.45)';
+      c.strokeRect(px + 1.5, py + 1.5, s - 3, s - 3);
+    },
+  },
+  blueprint: {
+    colors: BLUEPRINT_COLORS,
+    cell(c, px, py, s, color) {
+      c.save();
+      c.globalAlpha *= 0.25;
+      c.fillStyle = color;
+      c.fillRect(px + 2, py + 2, s - 4, s - 4);
+      c.restore();
+      c.strokeStyle = color;
+      c.lineWidth = 2;
+      c.strokeRect(px + 2, py + 2, s - 4, s - 4);
+      c.lineWidth = 1;
+      c.beginPath(); // diagonal de plano técnico
+      c.moveTo(px + 3, py + s - 3);
+      c.lineTo(px + s - 3, py + 3);
+      c.stroke();
+    },
+  },
+};
+let skin = SKINS.retro;
+
+// Neon no tiene `light`: su tablero es negro en ambos temas.
+const palette = s => (document.documentElement.dataset.theme === 'light' && s.light) || s.colors;
+
 function drawBlock(context, x, y, colorIndex, size, alpha) {
   if (!colorIndex) return;
-  const color = tintLeft > 0 && context === ctx ? TINT_COLOR : COLORS[colorIndex];
+  const color = tintLeft > 0 && context === ctx ? TINT_COLOR : palette(skin)[colorIndex];
   context.globalAlpha = alpha ?? 1;
-  context.fillStyle = color;
-  context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
-  // highlight
-  context.fillStyle = 'rgba(255,255,255,0.12)';
-  context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
+  skin.cell(context, x * size, y * size, size, color);
   context.globalAlpha = 1;
 }
 
@@ -879,6 +1103,11 @@ function applyTheme(light) {
   themeToggle.setAttribute('aria-label', light ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro');
   themeToggle.querySelector('.theme-icon').textContent = light ? '☀' : '☁';
   themeToggle.querySelector('.theme-label').textContent = light ? 'LIGHT' : 'DARK';
+  refreshCanvas();
+}
+
+function refreshCanvas() {
+  drawThumbs();
   gridColor = getComputedStyle(document.documentElement).getPropertyValue('--grid').trim();
   // con el loop detenido (pausa/game over) hay que redibujar a mano
   if (current && (paused || gameOver)) {
@@ -887,9 +1116,35 @@ function applyTheme(light) {
   }
 }
 
+function applySkin(name) {
+  if (!SKINS[name]) name = 'retro';
+  skin = SKINS[name];
+  document.documentElement.dataset.skin = name;
+  skinBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.skin === name)));
+  try { localStorage.setItem('tetris-skin', name); } catch (e) { /* sin storage: no se persiste */ }
+  refreshCanvas();
+}
+
+// miniaturas: 2×2 bloques pintados con la propia skin del botón y la paleta del tema actual
+function drawThumbs() {
+  skinBtns.forEach(b => {
+    const s = SKINS[b.dataset.skin], c = b.querySelector('canvas').getContext('2d');
+    c.clearRect(0, 0, 28, 28);
+    [1, 3, 5, 4].forEach((v, i) => s.cell(c, (i % 2) * 14, Math.floor(i / 2) * 14, 14, palette(s)[v]));
+  });
+}
+
+skinBtns.forEach(b => b.addEventListener('click', () => {
+  applySkin(b.dataset.skin);
+  b.blur(); // evita que Space (hard drop) reactive el botón
+}));
+
 themeToggle.addEventListener('click', () => {
   applyTheme(themeToggle.getAttribute('aria-pressed') !== 'true');
   themeToggle.blur(); // evita que Space (hard drop) reactive el botón
 });
 
 applyTheme(false);
+let savedSkin = null;
+try { savedSkin = localStorage.getItem('tetris-skin'); } catch (e) { /* sin storage */ }
+applySkin(savedSkin);
