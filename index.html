@@ -27,6 +27,11 @@
           <span class="label">ENERGÍA (E)</span>
           <progress id="energy" max="10" value="0"></progress>
         </div>
+
+        <div class="panel-section live-records" id="live-records">
+          <span class="label" id="live-label">RÉCORDS</span>
+          <ol id="live-list" class="rec-list"></ol>
+        </div>
       </aside>
 
       <canvas id="board" width="300" height="600"></canvas>
@@ -68,11 +73,24 @@
       <div class="overlay-box">
         <p id="overlay-title">TETRIS</p>
         <p id="overlay-score"></p>
+        <form id="record-form" hidden>
+          <p class="new-record">¡NUEVO RÉCORD!</p>
+          <input id="record-name" maxlength="12" placeholder="Tu nombre" autocomplete="off" required />
+          <button>Guardar</button>
+        </form>
+        <section class="hiscores">
+          <h2 id="records-title">TOP 5</h2>
+          <ol id="records" class="rec-list"></ol>
+          <div id="bests"></div>
+          <button id="reset-records" type="button" class="link-btn">Borrar récords</button>
+        </section>
         <button id="restart-btn" hidden>Reiniciar</button>
-        <button class="mode-btn" data-mode="0">Normal</button>
-        <button class="mode-btn" data-mode="1">Desafío 1: 40 líneas en 2:00</button>
-        <button class="mode-btn" data-mode="2">Desafío 2: sobrevive 2:00</button>
-        <button class="mode-btn" data-mode="3">Desafío 3: limpia los fijos</button>
+        <div class="modes">
+          <button class="mode-btn" data-mode="0"><b>Normal</b><small>sin límite</small></button>
+          <button class="mode-btn" data-mode="1"><b>Desafío 1</b><small>40 líneas en 2:00</small></button>
+          <button class="mode-btn" data-mode="2"><b>Desafío 2</b><small>sobrevive 2:00</small></button>
+          <button class="mode-btn" data-mode="3"><b>Desafío 3</b><small>limpia los fijos</small></button>
+        </div>
       </div>
     </div>
   </div>

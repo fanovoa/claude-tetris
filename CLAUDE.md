@@ -10,7 +10,7 @@ Ejecutar: abrir `index.html` directamente, o servir de forma estática (`python 
 
 ## Arquitectura
 
-Tres archivos: `index.html` (DOM + dos canvas), `style.css` y `game.js` (toda la lógica, ~300 líneas, ámbito global, `'use strict'`).
+Tres archivos (más `fonts/PressStart2P.ttf`, fuente local del overlay y los récords): `index.html` (DOM + dos canvas), `style.css` y `game.js` (toda la lógica, ~300 líneas, ámbito global, `'use strict'`).
 
 - `game.js` mantiene todo el estado en variables `let` de nivel superior, reiniciadas por `init()` (que también es el handler del botón de reinicio). `init()` → `spawn()` promueve `next` a `current` y termina el juego si la nueva pieza colisiona.
 - El tablero es una matriz `ROWS × COLS` de `0` o un índice de pieza 1–7; el mismo índice selecciona la entrada en `COLORS` y en `PIECES`.
@@ -24,6 +24,10 @@ Tres archivos: `index.html` (DOM + dos canvas), `style.css` y `game.js` (toda la
 ## Habilidades
 
 `energy` (0–10, +1 por línea en `clearLines()`) se gasta entera con la tecla E: `openMenu()` cancela el loop y `menu` (`'abilities'`/`'swap'`) captura el teclado vía `handleMenuKey()`; `closeMenu()` reanuda el loop. `upcoming` (4 piezas tras `next`) alimenta `spawn()`; `undoSnap` se guarda al inicio de `lockPiece()`; `hold`/`holdReady` los usa la tecla C: el hold es permanente, una vez por pieza (`useHold()` pone `holdReady = false`, `lockPiece()` lo reactiva y `undoSnap` lo restaura); el slot se atenúa con `.off` mientras está bloqueado.
+
+## Récords
+
+`localStorage['tetris-records']` = `{ top (`{name, score, mode}`, máx. 5 por modo), best: { [modo]: {combo, lines} }, name }`. `renderRecords()` muestra solo el top y los mejores del `mode` actual, en el overlay y en `#live-records` (panel izquierdo, bajo la energía); `init()` lo re-renderiza al cambiar de modo. `endGame()` actualiza `best[mode]` (el combo sale de `maxCombo`, que `lockPiece()` sube) y muestra `#record-form` solo si el puntaje entra al top de ese modo; el submit inserta y `renderRecords(i)` resalta la fila. El formato anterior (`bestCombo`/`maxLines` globales) se ignora. El `keydown` global ignora eventos desde `INPUT`.
 
 ## Cuidado
 
