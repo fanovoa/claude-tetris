@@ -36,6 +36,42 @@ html[data-theme="light"] {
   --grid: #e3e6ee;
 }
 
+/* Skins con fondo propio: iguales en ambos temas */
+html[data-skin="neon"] {
+  --surface: #000000;
+  --grid: #14141f;
+}
+
+html[data-skin="lcd"] {
+  --surface: #9bbc0f;
+  --grid: #8bac0f;
+}
+
+html[data-skin="outrun"] {
+  --surface: #1a0b2e;
+  --grid: #3b1a63;
+}
+
+html[data-skin="vintage"] {
+  --surface: #e8d9b5;
+  --grid: #d4c299;
+}
+
+html[data-skin="crt"] {
+  --surface: #000000;
+  --grid: #0b2a14;
+}
+
+html[data-skin="wood"] {
+  --surface: #2b1a10;
+  --grid: #3a2416;
+}
+
+html[data-skin="blueprint"] {
+  --surface: #0d2b52;
+  --grid: #1d4a7d;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -88,6 +124,66 @@ body {
   font-weight: 700;
   letter-spacing: 2px;
   cursor: pointer;
+}
+
+/* ---- Selector de skin ---- */
+.skins {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.skin-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: var(--kbd-bg);
+  border: 2px solid var(--kbd-border);
+  border-radius: 3px;
+  box-shadow: 0 3px 0 var(--kbd-border);
+  color: var(--kbd-text);
+  padding: 4px 0 3px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+
+.skin-btn canvas {
+  display: block;
+  border-radius: 2px;
+  background: var(--surface);
+}
+
+.skin-btn[data-skin="neon"] canvas { background: #000; }
+.skin-btn[data-skin="lcd"] canvas { background: #9bbc0f; }
+.skin-btn[data-skin="blueprint"] canvas { background: #0d2b52; }
+.skin-btn[data-skin="outrun"] canvas { background: #1a0b2e; }
+.skin-btn[data-skin="vintage"] canvas { background: #e8d9b5; }
+.skin-btn[data-skin="crt"] canvas { background: #000; }
+.skin-btn[data-skin="wood"] canvas { background: #2b1a10; }
+
+.skin-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.skin-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--kbd-border);
+}
+
+.skin-btn[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 3px 0 var(--accent);
+}
+
+.skin-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .theme-toggle:hover {
