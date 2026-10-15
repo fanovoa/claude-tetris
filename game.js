@@ -71,7 +71,8 @@ const levelEl = document.getElementById('level');
 const comboEl = document.getElementById('combo');
 const overlay = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
-const overlayScore = document.getElementById('overlay-score');
+const overlayStats = document.getElementById('overlay-stats');
+const modeBtns = document.querySelectorAll('.mode-btn');
 const restartBtn = document.getElementById('restart-btn');
 const themeToggle = document.getElementById('theme-toggle');
 const goalEl = document.getElementById('goal');
@@ -81,6 +82,10 @@ const queueCtx = queueCanvas.getContext('2d');
 const holdCanvas = document.getElementById('hold-canvas');
 const holdCtx = holdCanvas.getContext('2d');
 const holdSection = document.getElementById('hold-section');
+const resumeBtn = document.getElementById('resume-btn');
+const pauseControls = document.getElementById('pause-controls');
+const startLevelEl = document.getElementById('start-level');
+pauseControls.append(document.querySelector('.controls').cloneNode(true));
 
 const ENERGY_MAX = 10;         // 1 línea = 1 de energía
 const PREVIEW_PIECES = 10;     // piezas que dura "ver 5 piezas"
@@ -91,6 +96,7 @@ let gridColor = '#22222e';
 
 let board, current, next, score, lines, level, paused, gameOver = true, lastTime, dropAccum, dropInterval, animId, tintLeft, freezeLeft, flashText, flashLeft;
 let combo, b2b, lastRotate, popups, shakeLeft, shakeMag, flashRows, flashRowsLeft;
+let startLevel = 1;
 let mode = 0, timeLeft, garbageAccum, fades; // mode: 0 normal, 1–3 desafíos
 let energy, menu, swapSel, upcoming, previewLeft, slowLeft, holdReady, hold, undoSnap; // menu: null | 'abilities' | 'swap'
 let audioCtx;
@@ -162,7 +168,7 @@ function clearLines() {
   if (full.length) {
     lines += full.length;
     energy = Math.min(ENERGY_MAX, energy + full.length);
-    level = Math.floor(lines / (mode === 3 ? 5 : 10)) + 1; // D3: sube más rápido para llegar a la rotación inversa
+    level = startLevel + Math.floor(lines / (mode === 3 ? 5 : 10)); // D3: sube más rápido para llegar a la rotación inversa
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
   }
   return full;
@@ -618,11 +624,18 @@ function useHold() {
   drawNext();
 }
 
+function showStats() {
+  document.getElementById('stat-level').textContent = level;
+  document.getElementById('stat-score').textContent = score.toLocaleString();
+  overlayStats.hidden = false;
+}
+
 function endGame(title = 'GAME OVER') {
   gameOver = true;
   cancelAnimationFrame(animId);
   overlayTitle.textContent = title;
-  overlayScore.textContent = `Puntuación: ${score.toLocaleString()}`;
+  showStats();
+  resumeBtn.hidden = pauseControls.hidden = true;
   overlay.classList.remove('hidden');
 }
 
@@ -630,12 +643,17 @@ function togglePause() {
   if (gameOver) return;
   paused = !paused;
   if (!paused) {
+    overlay.classList.add('hidden');
+    resumeBtn.hidden = pauseControls.hidden = true;
+    pauseControls.open = false;
+    document.activeElement.blur(); // el foco en select/botón haría que flechas/Space actúen sobre él
     lastTime = performance.now();
-    loop(lastTime);
+    animId = requestAnimationFrame(loop);
   } else {
     cancelAnimationFrame(animId);
     overlayTitle.textContent = 'PAUSA';
-    overlayScore.textContent = '';
+    showStats();
+    resumeBtn.hidden = pauseControls.hidden = false;
     overlay.classList.remove('hidden');
   }
 }
@@ -684,10 +702,13 @@ function init(m) {
   restartBtn.hidden = false;
   score = 0;
   lines = 0;
-  level = 1;
+  startLevel = +startLevelEl.value;
+  level = startLevel;
   paused = false;
   gameOver = false;
-  dropInterval = 1000;
+  dropInterval = Math.max(100, 1000 - (level - 1) * 90);
+  resumeBtn.hidden = pauseControls.hidden = overlayStats.hidden = true;
+  modeBtns.forEach(b => b.classList.toggle('active', +b.dataset.mode === mode));
   dropAccum = 0;
   tintLeft = 0;
   freezeLeft = 0;
@@ -720,7 +741,7 @@ function init(m) {
 
 document.addEventListener('keydown', e => {
   if (menu) { handleMenuKey(e); return; }
-  if (e.code === 'KeyP') { togglePause(); return; }
+  if (e.code === 'KeyP' || e.code === 'Escape') { togglePause(); return; }
   if (paused || gameOver) return;
   switch (e.code) {
     case 'KeyE':
@@ -750,8 +771,9 @@ document.addEventListener('keydown', e => {
   updateHUD();
 });
 
-restartBtn.addEventListener('click', () => init());
-document.querySelectorAll('.mode-btn').forEach(b => b.addEventListener('click', () => {
+restartBtn.addEventListener('click', () => { init(); restartBtn.blur(); });
+resumeBtn.addEventListener('click', togglePause);
+modeBtns.forEach(b => b.addEventListener('click', () => {
   init(+b.dataset.mode);
   b.blur(); // evita que Space (hard drop) reactive el botón
 }));

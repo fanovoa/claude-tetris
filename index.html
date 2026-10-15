@@ -67,12 +67,31 @@
     <div id="overlay" class="overlay">
       <div class="overlay-box">
         <p id="overlay-title">TETRIS</p>
-        <p id="overlay-score"></p>
-        <button id="restart-btn" hidden>Reiniciar</button>
-        <button class="mode-btn" data-mode="0">Normal</button>
-        <button class="mode-btn" data-mode="1">Desafío 1: 40 líneas en 2:00</button>
-        <button class="mode-btn" data-mode="2">Desafío 2: sobrevive 2:00</button>
-        <button class="mode-btn" data-mode="3">Desafío 3: limpia los fijos</button>
+        <div id="overlay-stats" hidden>
+          <span>Nivel <b id="stat-level"></b></span>
+          <span>Puntaje <b id="stat-score"></b></span>
+        </div>
+        <div class="overlay-cols">
+          <section class="overlay-col">
+            <h2>Partida</h2>
+            <button id="resume-btn" hidden>Reanudar</button>
+            <button id="restart-btn" hidden>Reiniciar</button>
+            <label class="start-level">Nivel inicial
+              <select id="start-level">
+                <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+                <option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
+              </select>
+            </label>
+            <details id="pause-controls" hidden><summary>Ver controles</summary></details>
+          </section>
+          <section class="overlay-col">
+            <h2>Modo de juego</h2>
+            <button class="mode-btn" data-mode="0">Normal<small>Sin límite</small></button>
+            <button class="mode-btn" data-mode="1">Desafío 1<small>40 líneas en 2:00</small></button>
+            <button class="mode-btn" data-mode="2">Desafío 2<small>Sobrevive 2:00</small></button>
+            <button class="mode-btn" data-mode="3">Desafío 3<small>Limpia los fijos</small></button>
+          </section>
+        </div>
       </div>
     </div>
   </div>
