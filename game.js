@@ -82,6 +82,15 @@ const holdCanvas = document.getElementById('hold-canvas');
 const holdCtx = holdCanvas.getContext('2d');
 const holdSection = document.getElementById('hold-section');
 
+const RECORDS_KEY = 'tetris-records';
+const TOP_N = 5;
+const nameForm = document.getElementById('name-form');
+const nameInput = document.getElementById('name-input');
+const recordsList = document.getElementById('records-list');
+const recordsExtra = document.getElementById('records-extra');
+const resetRecordsBtn = document.getElementById('reset-records');
+let pendingScore = null;
+
 const ENERGY_MAX = 10;         // 1 línea = 1 de energía
 const PREVIEW_PIECES = 10;     // piezas que dura "ver 5 piezas"
 const SLOW_TIME = 10000;
@@ -89,7 +98,7 @@ const ABILITIES = ['Ver 5 piezas', 'Intercambiar pieza', 'Ralentizar 10 s', 'Des
 
 let gridColor = '#22222e';
 
-let board, current, next, score, lines, level, paused, gameOver = true, lastTime, dropAccum, dropInterval, animId, tintLeft, freezeLeft, flashText, flashLeft;
+let maxCombo, board, current, next, score, lines, level, paused, gameOver = true, lastTime, dropAccum, dropInterval, animId, tintLeft, freezeLeft, flashText, flashLeft;
 let combo, b2b, lastRotate, popups, shakeLeft, shakeMag, flashRows, flashRowsLeft;
 let mode = 0, timeLeft, garbageAccum, fades; // mode: 0 normal, 1–3 desafíos
 let energy, menu, swapSel, upcoming, previewLeft, slowLeft, holdReady, hold, undoSnap; // menu: null | 'abilities' | 'swap'
@@ -280,6 +289,7 @@ function lockPiece() {
   }
   if (cleared) {
     combo = Math.min(combo + 1, MAX_COMBO);
+    maxCombo = Math.max(maxCombo, combo);
     const hard = cleared === 4 || tspin;
     let pts = (tspin ? TSPIN_SCORES[Math.min(cleared, 3)] : LINE_SCORES[cleared]) * level * nut * combo;
     if (hard && b2b) pts *= 1.5;
@@ -623,8 +633,64 @@ function endGame(title = 'GAME OVER') {
   cancelAnimationFrame(animId);
   overlayTitle.textContent = title;
   overlayScore.textContent = `Puntuación: ${score.toLocaleString()}`;
+  const r = loadRecords();
+  r.bestCombo = Math.max(r.bestCombo, maxCombo);
+  r.maxLines = Math.max(r.maxLines, lines);
+  r.top.forEach(t => delete t.last); // el resaltado solo vale para la partida que acaba de terminar
+  saveRecords(r);
+  const qualifies = score > 0 && (r.top.length < TOP_N || score > r.top[TOP_N - 1].score);
+  pendingScore = qualifies ? { score } : null;
+  if (qualifies) overlayScore.textContent += ' · ¡Entras al top!';
+  nameForm.hidden = !qualifies;
+  if (qualifies) { nameInput.value = ''; nameInput.focus(); }
+  renderRecords();
   overlay.classList.remove('hidden');
 }
+
+// --- Records (localStorage) ---
+function loadRecords() {
+  try {
+    const r = JSON.parse(localStorage.getItem(RECORDS_KEY));
+    if (Array.isArray(r.top)) return { top: r.top, bestCombo: r.bestCombo | 0, maxLines: r.maxLines | 0 };
+  } catch (e) {}
+  return { top: [], bestCombo: 0, maxLines: 0 };
+}
+
+function saveRecords(r) {
+  try { localStorage.setItem(RECORDS_KEY, JSON.stringify(r)); } catch (e) {} // ponytail: sin storage simplemente no persiste
+}
+
+function renderRecords() {
+  const r = loadRecords();
+  recordsList.replaceChildren(...r.top.map(t => {
+    const li = document.createElement('li');
+    li.textContent = `${t.name} — ${t.score.toLocaleString()}`; // textContent: el nombre es input del usuario
+    if (t.last) li.className = 'highlight';
+    return li;
+  }));
+  if (!r.top.length) recordsList.innerHTML = '<li>Sin records</li>';
+  recordsExtra.textContent = `Mejor combo: ×${r.bestCombo} · Máx. líneas: ${r.maxLines}`;
+}
+
+nameForm.addEventListener('submit', e => {
+  e.preventDefault();
+  if (!pendingScore) return;
+  const r = loadRecords();
+  r.top.forEach(t => delete t.last);
+  r.top.push({ name: nameInput.value.trim() || 'Anónimo', score: pendingScore.score, last: true });
+  r.top.sort((a, b) => b.score - a.score).splice(TOP_N);
+  saveRecords(r);
+  pendingScore = null;
+  nameForm.hidden = true;
+  renderRecords();
+});
+
+resetRecordsBtn.addEventListener('click', () => {
+  if (!confirm('¿Borrar todos los records?')) return;
+  saveRecords({ top: [], bestCombo: 0, maxLines: 0 });
+  renderRecords();
+  resetRecordsBtn.blur();
+});
 
 function togglePause() {
   if (gameOver) return;
@@ -693,6 +759,7 @@ function init(m) {
   freezeLeft = 0;
   flashLeft = 0;
   combo = 0;
+  maxCombo = 0;
   b2b = false;
   lastRotate = false;
   popups = [];
@@ -779,3 +846,4 @@ themeToggle.addEventListener('click', () => {
 });
 
 applyTheme(false);
+renderRecords();
