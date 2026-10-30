@@ -69,6 +69,28 @@ body {
   margin-bottom: 16px;
 }
 
+/* ---- Skins (la paleta de bloques vive en game.js) ---- */
+.skin-select {
+  position: absolute;
+  top: 0;
+  right: 112px;
+  background: var(--kbd-bg);
+  border: 2px solid var(--kbd-border);
+  border-radius: 3px;
+  color: var(--kbd-text);
+  padding: 4px 6px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+html[data-skin="neon"] { --grid: #1c1c2c; }
+html[data-skin="neon"] #board,
+html[data-skin="neon"] #next-canvas,
+html[data-skin="neon"] #queue-canvas,
+html[data-skin="neon"] #hold-canvas { background: #000; }
+
 /* ---- Toggle de tema ---- */
 .theme-toggle {
   position: absolute;
