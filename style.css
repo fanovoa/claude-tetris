@@ -310,3 +310,50 @@ kbd {
 #pause-controls { list-style: none; padding: 0; margin: 0; font-size: 13px; text-align: left; }
 #pause-controls[hidden] { display: none; }
 .start-level { font-size: 13px; display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+
+#records-list {
+  margin: 0;
+  padding-left: 24px;
+  text-align: left;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  color: var(--accent);
+}
+
+#records-list .highlight {
+  font-weight: 800;
+  color: var(--danger);
+}
+
+#records-extra {
+  margin: 0;
+  font-size: 12px;
+}
+
+#name-form {
+  display: flex;
+  gap: 6px;
+}
+
+#name-form[hidden] {
+  display: none;
+}
+
+#name-input {
+  width: 120px;
+  padding: 6px;
+  border-radius: 6px;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: inherit;
+}
+
+#reset-records, #name-form button {
+  background: transparent;
+  color: inherit;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  cursor: pointer;
+}

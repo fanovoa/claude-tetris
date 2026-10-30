@@ -68,6 +68,15 @@
       <div class="overlay-box">
         <p id="overlay-title">TETRIS</p>
         <p id="overlay-score"></p>
+        <form id="name-form" hidden>
+          <input id="name-input" maxlength="12" placeholder="Tu nombre" autocomplete="off" required />
+          <button type="submit">Guardar</button>
+        </form>
+        <div id="records">
+          <ol id="records-list"></ol>
+          <p id="records-extra"></p>
+          <button id="reset-records" type="button">Resetear records</button>
+        </div>
         <button id="restart-btn" hidden>Reiniciar</button>
         <button class="mode-btn" data-mode="0">Normal</button>
         <button class="mode-btn" data-mode="1">Desafío 1: 40 líneas en 2:00</button>
