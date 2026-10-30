@@ -392,15 +392,81 @@ function updateHUD() {
   updateGoal();
 }
 
+const NEON_COLORS = [
+  null, '#00e5ff', '#ffff00', '#d500f9', '#00ff66', '#ff1744', '#448aff', '#ff9100',
+  '#cfd8dc', '#ff4081', '#1de9b6', '#eeff41', '#ffffff', '#ff1744', '#ffea00', '#e040fb',
+  '#ff9e80', '#18ffff', '#90a4ae',
+];
+const PASTEL_COLORS = [
+  null, '#b5ead7', '#fff1b8', '#d7bde2', '#c7f0bd', '#ffb3ba', '#bae1ff', '#ffdfba',
+  '#d5dde0', '#ffc4d9', '#a8e6df', '#fdfd96', '#fffafa', '#9e9e9e', '#fff59d', '#e1bee7',
+  '#d7c4bb', '#b2ebf2', '#b0bec5',
+];
+
+// cada skin: paleta + función que pinta un bloque en (x, y) de lado s
+const SKINS = {
+  retro: {
+    colors: COLORS,
+    block(c, x, y, s, color) {
+      c.fillStyle = color;
+      c.fillRect(x, y, s, s);
+      c.fillStyle = 'rgba(255,255,255,0.12)';
+      c.fillRect(x, y, s, 4);
+    },
+  },
+  neon: {
+    colors: NEON_COLORS,
+    block(c, x, y, s, color) {
+      c.save();
+      c.shadowColor = color;
+      c.shadowBlur = s / 2;
+      c.fillStyle = color + '40';
+      c.fillRect(x, y, s, s);
+      c.strokeStyle = color;
+      c.lineWidth = 2;
+      c.strokeRect(x + 1, y + 1, s - 2, s - 2);
+      c.restore();
+    },
+  },
+  pastel: {
+    colors: PASTEL_COLORS,
+    block(c, x, y, s, color) {
+      c.fillStyle = color;
+      c.beginPath();
+      c.roundRect(x, y, s, s, s / 4);
+      c.fill();
+      c.fillStyle = 'rgba(255,255,255,0.35)';
+      c.beginPath();
+      c.roundRect(x + s * 0.15, y + s * 0.12, s * 0.7, s * 0.18, s / 10);
+      c.fill();
+    },
+  },
+  pixel: {
+    colors: COLORS,
+    block(c, x, y, s, color) {
+      const p = s / 6; // píxel de la textura
+      c.fillStyle = color;
+      c.fillRect(x, y, s, s);
+      c.fillStyle = 'rgba(0,0,0,0.18)'; // damero
+      for (let i = 0; i < 6; i++)
+        for (let j = 0; j < 6; j++)
+          if ((i + j) % 2) c.fillRect(x + i * p, y + j * p, p, p);
+      c.fillStyle = 'rgba(255,255,255,0.45)'; // bisel claro
+      c.fillRect(x, y, s, p);
+      c.fillRect(x, y, p, s);
+      c.fillStyle = 'rgba(0,0,0,0.45)'; // bisel oscuro
+      c.fillRect(x, y + s - p, s, p);
+      c.fillRect(x + s - p, y, p, s);
+    },
+  },
+};
+let skin = SKINS.retro;
+
 function drawBlock(context, x, y, colorIndex, size, alpha) {
   if (!colorIndex) return;
-  const color = tintLeft > 0 && context === ctx ? TINT_COLOR : COLORS[colorIndex];
+  const color = tintLeft > 0 && context === ctx ? TINT_COLOR : skin.colors[colorIndex];
   context.globalAlpha = alpha ?? 1;
-  context.fillStyle = color;
-  context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
-  // highlight
-  context.fillStyle = 'rgba(255,255,255,0.12)';
-  context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
+  skin.block(context, x * size + 1, y * size + 1, size - 2, color);
   context.globalAlpha = 1;
 }
 
@@ -841,6 +907,10 @@ function applyTheme(light) {
   themeToggle.querySelector('.theme-icon').textContent = light ? '☀' : '☁';
   themeToggle.querySelector('.theme-label').textContent = light ? 'LIGHT' : 'DARK';
   gridColor = getComputedStyle(document.documentElement).getPropertyValue('--grid').trim();
+  redrawIfStopped();
+}
+
+function redrawIfStopped() {
   // con el loop detenido (pausa/game over) hay que redibujar a mano
   if (current && (paused || gameOver)) {
     draw();
@@ -853,5 +923,25 @@ themeToggle.addEventListener('click', () => {
   themeToggle.blur(); // evita que Space (hard drop) reactive el botón
 });
 
+const skinSelect = document.getElementById('skin-select');
+
+function applySkin(name) {
+  if (!SKINS[name]) name = 'retro';
+  skin = SKINS[name];
+  document.documentElement.dataset.skin = name;
+  skinSelect.value = name;
+  gridColor = getComputedStyle(document.documentElement).getPropertyValue('--grid').trim();
+  redrawIfStopped();
+}
+
+skinSelect.addEventListener('change', () => {
+  applySkin(skinSelect.value);
+  try { localStorage.setItem('tetris-skin', skinSelect.value); } catch {}
+  skinSelect.blur(); // evita que las flechas/Space cambien el skin en juego
+});
+
 applyTheme(false);
 renderRecords();
+let savedSkin = null;
+try { savedSkin = localStorage.getItem('tetris-skin'); } catch {}
+applySkin(savedSkin);
