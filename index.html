@@ -75,6 +75,27 @@
         <button class="mode-btn" data-mode="3">Desafío 3: limpia los fijos</button>
       </div>
     </div>
+
+    <div id="pause-menu" class="overlay hidden">
+      <div class="overlay-box">
+        <p class="pause-title">PAUSA</p>
+        <button class="pause-btn" id="resume-btn">Reanudar</button>
+        <button class="pause-btn" id="pause-restart-btn">Reiniciar</button>
+        <button class="pause-btn" id="controls-btn">Ver controles</button>
+        <ul id="pause-controls" hidden>
+          <li><kbd>←</kbd><kbd>→</kbd> mover</li>
+          <li><kbd>↑</kbd> rotar</li>
+          <li><kbd>↓</kbd> bajar</li>
+          <li><kbd>Space</kbd> caída</li>
+          <li><kbd>P</kbd>/<kbd>Esc</kbd> pausa</li>
+          <li><kbd>E</kbd> habilidad</li>
+          <li><kbd>C</kbd> hold</li>
+        </ul>
+        <label class="start-level">Nivel inicial
+          <select id="start-level"></select>
+        </label>
+      </div>
+    </div>
   </div>
 
   <ul class="controls">
@@ -82,12 +103,13 @@
     <li><kbd>↑</kbd> rotar</li>
     <li><kbd>↓</kbd> bajar</li>
     <li><kbd>Space</kbd> caída</li>
-    <li><kbd>P</kbd> pausa</li>
+    <li><kbd>P</kbd>/<kbd>Esc</kbd> pausa</li>
     <li><kbd>E</kbd> habilidad</li>
     <li><kbd>C</kbd> hold</li>
   </ul>
   </main>
 
+  <script>document.getElementById("start-level").innerHTML = Array.from({length: 10}, (_, i) => `<option>${i + 1}</option>`).join("");</script>
   <script src="game.js"></script>
 </body>
 </html>
