@@ -73,6 +73,9 @@ const overlay = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
+const pauseMenu = document.getElementById('pause-menu');
+const pauseControls = document.getElementById('pause-controls');
+const startLevelSel = document.getElementById('start-level');
 const themeToggle = document.getElementById('theme-toggle');
 const goalEl = document.getElementById('goal');
 const energyEl = document.getElementById('energy');
@@ -162,7 +165,7 @@ function clearLines() {
   if (full.length) {
     lines += full.length;
     energy = Math.min(ENERGY_MAX, energy + full.length);
-    level = Math.floor(lines / (mode === 3 ? 5 : 10)) + 1; // D3: sube más rápido para llegar a la rotación inversa
+    level = +startLevelSel.value + Math.floor(lines / (mode === 3 ? 5 : 10)); // D3: sube más rápido para llegar a la rotación inversa
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
   }
   return full;
@@ -634,10 +637,10 @@ function togglePause() {
     loop(lastTime);
   } else {
     cancelAnimationFrame(animId);
-    overlayTitle.textContent = 'PAUSA';
-    overlayScore.textContent = '';
-    overlay.classList.remove('hidden');
+    pauseControls.hidden = true;
+    pauseMenu.classList.remove('hidden');
   }
+  if (!paused) pauseMenu.classList.add('hidden');
 }
 
 function loop(ts) {
@@ -684,10 +687,11 @@ function init(m) {
   restartBtn.hidden = false;
   score = 0;
   lines = 0;
-  level = 1;
+  level = +startLevelSel.value;
   paused = false;
+  pauseMenu.classList.add('hidden');
   gameOver = false;
-  dropInterval = 1000;
+  dropInterval = Math.max(100, 1000 - (level - 1) * 90);
   dropAccum = 0;
   tintLeft = 0;
   freezeLeft = 0;
@@ -720,7 +724,7 @@ function init(m) {
 
 document.addEventListener('keydown', e => {
   if (menu) { handleMenuKey(e); return; }
-  if (e.code === 'KeyP') { togglePause(); return; }
+  if (e.code === 'KeyP' || e.code === 'Escape') { togglePause(); return; }
   if (paused || gameOver) return;
   switch (e.code) {
     case 'KeyE':
@@ -751,6 +755,10 @@ document.addEventListener('keydown', e => {
 });
 
 restartBtn.addEventListener('click', () => init());
+document.getElementById('resume-btn').addEventListener('click', e => { togglePause(); e.currentTarget.blur(); });
+document.getElementById('pause-restart-btn').addEventListener('click', e => { init(); e.currentTarget.blur(); });
+document.getElementById('controls-btn').addEventListener('click', e => { pauseControls.hidden = !pauseControls.hidden; e.currentTarget.blur(); });
+startLevelSel.addEventListener('change', () => startLevelSel.blur()); // evita que las flechas/Space sigan sobre el select
 document.querySelectorAll('.mode-btn').forEach(b => b.addEventListener('click', () => {
   init(+b.dataset.mode);
   b.blur(); // evita que Space (hard drop) reactive el botón

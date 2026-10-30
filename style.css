@@ -288,7 +288,7 @@ kbd {
   color: var(--accent);
 }
 
-#restart-btn, .mode-btn {
+#restart-btn, .mode-btn, .pause-btn {
   margin-top: 8px;
   background: var(--accent);
   color: var(--on-accent);
@@ -302,6 +302,11 @@ kbd {
   transition: background 0.15s;
 }
 
-#restart-btn:hover, .mode-btn:hover {
+#restart-btn:hover, .mode-btn:hover, .pause-btn:hover {
   background: var(--accent-hover);
 }
+
+.pause-title { font-size: 28px; font-weight: 800; letter-spacing: 4px; color: var(--danger); }
+#pause-controls { list-style: none; padding: 0; margin: 0; font-size: 13px; text-align: left; }
+#pause-controls[hidden] { display: none; }
+.start-level { font-size: 13px; display: flex; gap: 8px; align-items: center; margin-top: 8px; }
